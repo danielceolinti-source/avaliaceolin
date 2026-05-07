@@ -1,33 +1,42 @@
-import { useMemo, useState } from "react";
-import { MOCK_AVALIACOES } from "@/data/mock";
+import { useEffect, useMemo, useState } from "react";
 import { STATUS, STATUS_COLORS, Status } from "@/data/constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Download, Filter, Plus } from "lucide-react";
+import { Search, Download, Filter, Plus, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useApp } from "@/store/app";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
-const moeda = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const moeda = (n: number | null) => (n ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 export default function Avaliacoes() {
   const { empresaFiltro } = useApp();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<Status | "todos">("todos");
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const data = useMemo(() => {
-    return MOCK_AVALIACOES.filter((a) => {
-      if (empresaFiltro !== "Todas" && a.empresa !== empresaFiltro) return false;
-      if (status !== "todos" && a.status !== status) return false;
-      if (q) {
-        const t = q.toLowerCase();
-        return [a.placa, a.modelo, a.marca, a.vendedor, a.avaliador, a.chassi].some((v) => v?.toLowerCase().includes(t));
-      }
-      return true;
-    });
-  }, [empresaFiltro, q, status]);
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data, error } = await supabase.from("avaliacoes").select("*").order("created_at", { ascending: false });
+      if (!error) setRows(data || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const data = useMemo(() => rows.filter((a) => {
+    if (empresaFiltro !== "Todas" && a.empresa !== empresaFiltro) return false;
+    if (status !== "todos" && a.status !== status) return false;
+    if (q) {
+      const t = q.toLowerCase();
+      return [a.placa, a.modelo, a.marca, a.vendedor, a.chassi].some((v) => v?.toLowerCase().includes(t));
+    }
+    return true;
+  }), [rows, empresaFiltro, q, status]);
 
   return (
     <div className="space-y-5">
@@ -62,43 +71,53 @@ export default function Avaliacoes() {
 
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="text-left px-4 py-3">Nº</th>
-                  <th className="text-left px-4 py-3">Veículo</th>
-                  <th className="text-left px-4 py-3">Placa</th>
-                  <th className="text-left px-4 py-3 hidden md:table-cell">Empresa</th>
-                  <th className="text-left px-4 py-3 hidden lg:table-cell">Vendedor</th>
-                  <th className="text-left px-4 py-3 hidden lg:table-cell">Avaliador</th>
-                  <th className="text-left px-4 py-3 hidden md:table-cell">Origem</th>
-                  <th className="text-right px-4 py-3">FIPE</th>
-                  <th className="text-right px-4 py-3">Avaliação</th>
-                  <th className="text-left px-4 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((a) => (
-                  <tr key={a.id} className="border-t hover:bg-muted/30 cursor-pointer">
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">#{a.numero}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{a.marca} {a.modelo}</div>
-                      <div className="text-xs text-muted-foreground">{a.versao} • {a.ano} • {a.km.toLocaleString("pt-BR")} km</div>
-                    </td>
-                    <td className="px-4 py-3 font-mono">{a.placa}</td>
-                    <td className="px-4 py-3 hidden md:table-cell">{a.empresa}</td>
-                    <td className="px-4 py-3 hidden lg:table-cell">{a.vendedor}</td>
-                    <td className="px-4 py-3 hidden lg:table-cell">{a.avaliador}</td>
-                    <td className="px-4 py-3 hidden md:table-cell">{a.origem}</td>
-                    <td className="px-4 py-3 text-right font-mono">{moeda(a.fipe)}</td>
-                    <td className="px-4 py-3 text-right font-mono font-semibold">{moeda(a.avaliacao)}</td>
-                    <td className="px-4 py-3"><Badge variant="outline" className={STATUS_COLORS[a.status]}>{a.status}</Badge></td>
+          {loading ? (
+            <div className="py-16 grid place-items-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          ) : data.length === 0 ? (
+            <div className="py-16 text-center">
+              <div className="font-display text-lg font-semibold">Nenhuma avaliação ainda</div>
+              <p className="text-sm text-muted-foreground mt-1">Crie a primeira para começar a popular o sistema.</p>
+              <Button asChild className="mt-4 bg-gradient-primary text-primary-foreground shadow-glow">
+                <Link to="/nova"><Plus className="h-4 w-4 mr-2" /> Nova Avaliação</Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-4 py-3">Nº</th>
+                    <th className="text-left px-4 py-3">Veículo</th>
+                    <th className="text-left px-4 py-3">Placa</th>
+                    <th className="text-left px-4 py-3 hidden md:table-cell">Empresa</th>
+                    <th className="text-left px-4 py-3 hidden lg:table-cell">Vendedor</th>
+                    <th className="text-left px-4 py-3 hidden md:table-cell">Origem</th>
+                    <th className="text-right px-4 py-3">FIPE</th>
+                    <th className="text-right px-4 py-3">Avaliação</th>
+                    <th className="text-left px-4 py-3">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {data.map((a) => (
+                    <tr key={a.id} className="border-t hover:bg-muted/30 cursor-pointer">
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">#{a.numero}</td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium">{a.marca} {a.modelo}</div>
+                        <div className="text-xs text-muted-foreground">{a.ano} {a.km ? `• ${a.km.toLocaleString("pt-BR")} km` : ""}</div>
+                      </td>
+                      <td className="px-4 py-3 font-mono">{a.placa}</td>
+                      <td className="px-4 py-3 hidden md:table-cell">{a.empresa}</td>
+                      <td className="px-4 py-3 hidden lg:table-cell">{a.vendedor}</td>
+                      <td className="px-4 py-3 hidden md:table-cell">{a.origem}</td>
+                      <td className="px-4 py-3 text-right font-mono">{moeda(a.fipe)}</td>
+                      <td className="px-4 py-3 text-right font-mono font-semibold">{moeda(a.avaliacao)}</td>
+                      <td className="px-4 py-3"><Badge variant="outline" className={STATUS_COLORS[a.status as Status]}>{a.status}</Badge></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
