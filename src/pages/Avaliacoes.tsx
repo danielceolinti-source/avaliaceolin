@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, Download, Filter, Plus, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "@/store/app";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 const moeda = (n: number | null) => (n ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 export default function Avaliacoes() {
+  const navigate = useNavigate();
   const { empresaFiltro } = useApp();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<Status | "todos">("todos");
@@ -99,7 +100,7 @@ export default function Avaliacoes() {
                 </thead>
                 <tbody>
                   {data.map((a) => (
-                    <tr key={a.id} className="border-t hover:bg-muted/30 cursor-pointer">
+                    <tr key={a.id} onClick={() => navigate(`/avaliacoes/${a.id}`)} className="border-t hover:bg-muted/30 cursor-pointer">
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">#{a.numero}</td>
                       <td className="px-4 py-3">
                         <div className="font-medium">{a.marca} {a.modelo}</div>
