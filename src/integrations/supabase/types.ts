@@ -14,16 +14,236 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      avaliacao_fotos: {
+        Row: {
+          avaliacao_id: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          peca: string | null
+          storage_path: string
+        }
+        Insert: {
+          avaliacao_id: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          peca?: string | null
+          storage_path: string
+        }
+        Update: {
+          avaliacao_id?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          peca?: string | null
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliacao_fotos_avaliacao_id_fkey"
+            columns: ["avaliacao_id"]
+            isOneToOne: false
+            referencedRelation: "avaliacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      avaliacoes: {
+        Row: {
+          ano: string | null
+          avaliacao: number | null
+          avarias: Json | null
+          chassi: string | null
+          created_at: string
+          created_by: string | null
+          custo: number | null
+          empresa: Database["public"]["Enums"]["empresa"]
+          estado_geral: string | null
+          fipe: number | null
+          historico: Json | null
+          id: string
+          km: number | null
+          marca: string | null
+          modelo: string | null
+          nivel_avarias: string | null
+          numero: number
+          observacoes: string | null
+          opcionais: Json | null
+          origem: Database["public"]["Enums"]["origem"] | null
+          placa: string
+          status: Database["public"]["Enums"]["status_avaliacao"]
+          updated_at: string
+          updated_by: string | null
+          vendedor: string | null
+          versao: string | null
+        }
+        Insert: {
+          ano?: string | null
+          avaliacao?: number | null
+          avarias?: Json | null
+          chassi?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo?: number | null
+          empresa: Database["public"]["Enums"]["empresa"]
+          estado_geral?: string | null
+          fipe?: number | null
+          historico?: Json | null
+          id?: string
+          km?: number | null
+          marca?: string | null
+          modelo?: string | null
+          nivel_avarias?: string | null
+          numero?: number
+          observacoes?: string | null
+          opcionais?: Json | null
+          origem?: Database["public"]["Enums"]["origem"] | null
+          placa: string
+          status?: Database["public"]["Enums"]["status_avaliacao"]
+          updated_at?: string
+          updated_by?: string | null
+          vendedor?: string | null
+          versao?: string | null
+        }
+        Update: {
+          ano?: string | null
+          avaliacao?: number | null
+          avarias?: Json | null
+          chassi?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo?: number | null
+          empresa?: Database["public"]["Enums"]["empresa"]
+          estado_geral?: string | null
+          fipe?: number | null
+          historico?: Json | null
+          id?: string
+          km?: number | null
+          marca?: string | null
+          modelo?: string | null
+          nivel_avarias?: string | null
+          numero?: number
+          observacoes?: string | null
+          opcionais?: Json | null
+          origem?: Database["public"]["Enums"]["origem"] | null
+          placa?: string
+          status?: Database["public"]["Enums"]["status_avaliacao"]
+          updated_at?: string
+          updated_by?: string | null
+          vendedor?: string | null
+          versao?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "super_admin" | "ti" | "gestor" | "avaliador"
+      empresa: "Ceolin" | "Viva"
+      origem: "WhatsApp" | "Presencial"
+      status_avaliacao:
+        | "Em Avaliação"
+        | "Finalizada"
+        | "Comprado"
+        | "Não Comprado"
+        | "Cancelado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +370,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["super_admin", "ti", "gestor", "avaliador"],
+      empresa: ["Ceolin", "Viva"],
+      origem: ["WhatsApp", "Presencial"],
+      status_avaliacao: [
+        "Em Avaliação",
+        "Finalizada",
+        "Comprado",
+        "Não Comprado",
+        "Cancelado",
+      ],
+    },
   },
 } as const
