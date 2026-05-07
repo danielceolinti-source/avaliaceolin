@@ -1,1 +1,7 @@
 project_id = "nsmjjsgeontxqppslblw"
+
+[functions.ocr-placa]
+verify_jwt = true
+
+[functions.fipe-lookup]
+verify_jwt = true
