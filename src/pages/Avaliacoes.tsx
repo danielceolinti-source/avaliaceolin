@@ -99,7 +99,7 @@ export default function Avaliacoes() {
                 </thead>
                 <tbody>
                   {data.map((a) => (
-                    <tr key={a.id} className="border-t hover:bg-muted/30 cursor-pointer">
+                    <tr key={a.id} onClick={() => (window.location.href = `/avaliacoes/${a.id}`)} className="border-t hover:bg-muted/30 cursor-pointer">
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">#{a.numero}</td>
                       <td className="px-4 py-3">
                         <div className="font-medium">{a.marca} {a.modelo}</div>
