@@ -1,4 +1,4 @@
-import { Search, Moon, Sun, Wifi, WifiOff, Bell } from "lucide-react";
+import { Search, Moon, Sun, Wifi, WifiOff, Bell, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useApp } from "@/store/app";
@@ -6,10 +6,16 @@ import { EMPRESAS } from "@/data/constants";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 export function Topbar() {
   const { empresaFiltro, setEmpresaFiltro, dark, toggleDark, setTheme } = useApp();
   const [online, setOnline] = useState(navigator.onLine);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const initials = ((user?.user_metadata?.full_name as string) || user?.email || "U")
+    .split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
 
   useEffect(() => {
     const on = () => setOnline(true);
@@ -57,8 +63,17 @@ export function Topbar() {
       <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleDark}>
         {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
       </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-9 w-9"
+        onClick={async () => { await signOut(); navigate("/auth"); }}
+        title="Sair"
+      >
+        <LogOut className="h-4 w-4" />
+      </Button>
       <div className="h-9 w-9 rounded-full bg-gradient-primary text-primary-foreground grid place-items-center font-semibold text-sm shadow-glow">
-        AC
+        {initials}
       </div>
     </div>
   );
