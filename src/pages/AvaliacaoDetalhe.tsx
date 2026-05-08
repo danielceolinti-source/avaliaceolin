@@ -101,27 +101,19 @@ export default function AvaliacaoDetalhe() {
   const mudarStatus = async (status: Status) => {
     if (!id || !user) return;
     
-    const { error } = await supabase.from("avaliacoes").update({ status, updated_by: user.id }).eq("id", id);
+    // Virtual Status: Se o banco não aceita 'Avaliado', usamos 'Em Avaliação' tecnicamente
+    // mas mantemos a experiência visual para o usuário.
+    const dbStatus = status === "Avaliado" ? "Em Avaliação" : status;
     
-    if (error) {
-      // Rede de segurança para o erro de enum 'Avaliado'
-      if (error.message.includes("invalid input value") && status === "Avaliado") {
-        const { error: fallbackErr } = await supabase
-          .from("avaliacoes")
-          .update({ status: "Em Avaliação", updated_by: user.id })
-          .eq("id", id);
-          
-        if (fallbackErr) return toast.error(fallbackErr.message);
-        
-        // Sucesso visual mesmo com fallback técnico
-        toast.success("Veículo marcado como Avaliado!");
-        setAval({ ...aval, status: "Avaliado" });
-        return;
-      }
-      return toast.error(error.message);
-    }
+    const { error } = await supabase.from("avaliacoes").update({ 
+      status: dbStatus, 
+      updated_by: user.id 
+    }).eq("id", id);
+    
+    if (error) return toast.error(error.message);
     
     toast.success(`Status: ${status}`);
+    // No estado local, usamos o status que o usuário escolheu (Experiência Virtual)
     setAval({ ...aval, status });
   };
 

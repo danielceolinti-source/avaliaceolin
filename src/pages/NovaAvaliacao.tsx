@@ -95,6 +95,7 @@ export default function NovaAvaliacao() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
+  const placaRef = useRef<HTMLInputElement>(null);
 
   const [empresa, setEmpresa] = useState<Empresa>("Ceolin");
   const { vendedores } = useVendedores(empresa);
@@ -219,8 +220,9 @@ export default function NovaAvaliacao() {
         
         const interval = setInterval(() => {
           attempts++;
-          const input = document.getElementById("placa-input") as HTMLInputElement;
+          const input = placaRef.current;
           if (input) {
+            input.focus();
             input.value = detected.toUpperCase();
             input.dispatchEvent(new Event("input", { bubbles: true }));
             input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -312,7 +314,7 @@ export default function NovaAvaliacao() {
             <div>
               <Label className="text-white/80">Placa</Label>
               <Input
-                id="placa-input"
+                ref={placaRef}
                 value={placa}
                 onChange={(e) => setPlaca(e.target.value.toUpperCase())}
                 placeholder="ABC1D23"

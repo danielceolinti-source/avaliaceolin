@@ -227,20 +227,16 @@ export default function Configuracoes() {
 
         {/* 1. EMPRESAS */}
         <TabsContent value="empresas" className="space-y-4">
-          <input 
-            type="file" 
-            id="logo-upload" 
-            hidden 
-            accept="image/*" 
-            onChange={(e) => {
-              const empId = (e.target as any).dataset.empId;
-              const idx = (e.target as any).dataset.idx;
-              uploadLogo(e, empId, Number(idx));
-            }} 
-          />
           <div className="grid md:grid-cols-2 gap-6">
             {empresasData.map((emp, idx) => (
               <Card key={emp.id} className="overflow-hidden border-none shadow-md">
+                <input 
+                  type="file" 
+                  id={`logo-upload-${emp.id}`} 
+                  hidden 
+                  accept="image/*" 
+                  onChange={(e) => uploadLogo(e, emp.id, idx)} 
+                />
                 <div className={`h-2`} style={{ backgroundColor: emp.id === 'Ceolin' ? (emp.cor || '#CE2B37') : (emp.cor || '#808285') }} />
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -305,10 +301,8 @@ export default function Configuracoes() {
                           variant="outline" 
                           className="h-8 gap-2"
                           onClick={() => {
-                            const input = document.getElementById('logo-upload') as any;
-                            input.dataset.empId = emp.id;
-                            input.dataset.idx = idx;
-                            input.click();
+                            const input = document.getElementById(`logo-upload-${emp.id}`);
+                            input?.click();
                           }}
                         >
                           <Upload className="h-3 w-3" /> Alterar Logo
