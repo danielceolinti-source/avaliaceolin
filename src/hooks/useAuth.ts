@@ -46,18 +46,23 @@ export function useAuth() {
 
     const initSession = async () => {
       try {
-        const { data } = await withTimeout(supabase.auth.getSession(), 8000);
+        console.log("Iniciando recuperação de sessão...");
+        // Tenta recuperar sessão existente sem disparar loading false imediatamente
+        const { data, error: sessionError } = await withTimeout(supabase.auth.getSession(), 8000);
+        
+        if (sessionError) throw sessionError;
         if (!mounted) return;
         
-        setSession(data.session);
-        setUser(data.session?.user ?? null);
-        
-        if (data.session?.user) {
+        console.log("Sessão recuperada:", data.session ? "Sucesso" : "Nenhuma sessão ativa");
+
+        if (data.session) {
+          setSession(data.session);
+          setUser(data.session.user);
           await checkStatus(data.session.user);
         }
       } catch (err: any) {
         console.error("Falha ao inicializar sessão:", err);
-        if (mounted) setError(err.message === "TIMEOUT_EXCEEDED" ? "Tempo de resposta excedido" : "Erro de conexão");
+        if (mounted) setError(err.message === "TIMEOUT_EXCEEDED" ? "Tempo de resposta excedido" : "Erro de conexão com servidor");
       } finally {
         if (mounted) setLoading(false);
       }

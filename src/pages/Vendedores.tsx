@@ -44,11 +44,25 @@ export default function Vendedores() {
     toast.success("Excluído");
     reload();
   };
+  const renomear = async (id: string, nome: string) => {
+    try {
+      const { error } = await supabase.from("vendedores").update({ nome }).eq("id", id);
+      if (error) throw error;
+      reload();
+    } catch (e: any) {
+      toast.error(`Erro ao renomear: ${e.message}`);
+    }
+  };
 
-  const renomear = async (id: string, nome: string) => {
-    const { error } = await supabase.from("vendedores").update({ nome }).eq("id", id);
-    if (error) return toast.error(error.message);
-    reload();
+  const alterarEmpresa = async (id: string, empresa: string) => {
+    try {
+      const { error } = await supabase.from("vendedores").update({ empresa }).eq("id", id);
+      if (error) throw error;
+      toast.success("Empresa atualizada");
+      reload();
+    } catch (e: any) {
+      toast.error(`Erro ao alterar empresa: ${e.message}`);
+    }
   };
 
   return (
@@ -94,11 +108,25 @@ export default function Vendedores() {
                   </div>
                   <div className="flex-1 min-w-0">
                     {canManageVendors ? (
-                      <Input defaultValue={v.nome} onBlur={(e) => e.target.value !== v.nome && renomear(v.id, e.target.value)} className="h-8 border-transparent hover:border-input" />
+                      <>
+                        <Input defaultValue={v.nome} onBlur={(e) => e.target.value !== v.nome && renomear(v.id, e.target.value)} className="h-8 border-transparent hover:border-input p-0 font-medium" />
+                        <div className="mt-1">
+                          <Select defaultValue={v.empresa || ""} onValueChange={(val) => alterarEmpresa(v.id, val)}>
+                            <SelectTrigger className="h-6 text-[10px] w-auto min-w-[100px] border-none bg-muted/50 py-0 px-2">
+                              <SelectValue placeholder="Empresa" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {EMPRESAS.map(e => <SelectItem key={e.id} value={e.id} className="text-[10px]">{e.nome}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
                     ) : (
-                      <div className="font-medium">{v.nome}</div>
+                      <>
+                        <div className="font-medium">{v.nome}</div>
+                        <div className="text-xs text-muted-foreground">{v.empresa || "—"}</div>
+                      </>
                     )}
-                    <div className="text-xs text-muted-foreground">{v.empresa || "—"}</div>
                   </div>
                   <Badge variant="outline" className={v.ativo ? "bg-success/10 text-success border-success/30" : "bg-muted text-muted-foreground"}>
                     {v.ativo ? "Ativo" : "Inativo"}
@@ -117,4 +145,6 @@ export default function Vendedores() {
       </Card>
     </div>
   );
+}
+;
 }
