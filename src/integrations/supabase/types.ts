@@ -186,9 +186,7 @@ export type Database = {
       }
       profiles: {
         Row: {
-          ativo: boolean | null
           created_at: string
-          empresa: Database["public"]["Enums"]["empresa"] | null
           full_name: string | null
           id: string
           phone: string | null
@@ -196,9 +194,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          ativo?: boolean | null
           created_at?: string
-          empresa?: Database["public"]["Enums"]["empresa"] | null
           full_name?: string | null
           id?: string
           phone?: string | null
@@ -206,9 +202,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          ativo?: boolean | null
           created_at?: string
-          empresa?: Database["public"]["Enums"]["empresa"] | null
           full_name?: string | null
           id?: string
           phone?: string | null
