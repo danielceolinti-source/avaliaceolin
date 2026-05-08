@@ -169,8 +169,8 @@ Deno.serve(async (req) => {
 
     try {
       const res = await firecrawlScrape(`https://placafipe.com/placa/${cleanPlaca}`);
-      debug.placafipe = { status: res?._status, keys: res?._keys, htmlLen: res?.html?.length, rawLen: res?.rawHtml?.length, mdLen: res?.markdown?.length };
-      const html = res?.html || res?.rawHtml || "";
+      debug.placafipe = { status: res?._status, keys: res?._keys, htmlLen: res?.html?.length, rawLen: res?.rawHtml?.length, mdLen: res?.markdown?.length, sample: (res?.rawHtml || res?.html || "").slice(0, 800) };
+      const html = res?.rawHtml || res?.html || "";
       if (html) {
         parsed = parsePlacafipe(html);
         if (parsed) source = "placafipe.com";
