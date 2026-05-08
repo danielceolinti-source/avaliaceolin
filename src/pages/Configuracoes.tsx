@@ -78,7 +78,7 @@ export default function Configuracoes() {
 
   const loadConfig = async () => {
     setLoadingConfig(true);
-    const { data } = await supabase.from("app_settings").select("*").eq("id", "config").single();
+    const { data } = await (supabase as any).from("app_settings").select("*").eq("id", "config").single();
     if (data?.data?.empresas) {
       setEmpresasData(data.data.empresas);
     }
@@ -87,7 +87,7 @@ export default function Configuracoes() {
 
   const saveConfig = async (newData: any) => {
     setLoadingConfig(true);
-    const { error } = await supabase.from("app_settings").upsert({
+    const { error } = await (supabase as any).from("app_settings").upsert({
       id: "config",
       data: { empresas: newData },
       updated_at: new Date().toISOString()
@@ -106,11 +106,12 @@ export default function Configuracoes() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
-      if (data) setPerfil({
-        full_name: data.full_name || "",
-        email_corporativo: data.email_corporativo || "",
-        telefone: data.telefone || "",
-        avatar_url: data.avatar_url || ""
+      const d: any = data;
+      if (d) setPerfil({
+        full_name: d.full_name || "",
+        email_corporativo: d.email_corporativo || "",
+        telefone: d.telefone || d.phone || "",
+        avatar_url: d.avatar_url || ""
       });
     }
     setLoadingPerfil(false);
@@ -121,7 +122,7 @@ export default function Configuracoes() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       // Tenta salvar todos os campos
-      const { error } = await supabase.from("profiles").update({
+      const { error } = await (supabase.from("profiles").update as any)({
         full_name: perfil.full_name,
         email_corporativo: perfil.email_corporativo,
         telefone: perfil.telefone
@@ -196,7 +197,7 @@ export default function Configuracoes() {
         .limit(50);
       
       if (error) throw error;
-      setLogs(data || []);
+      setLogs((data as any) || []);
     } catch (error: any) {
       toast.error("Erro ao carregar logs");
     } finally {

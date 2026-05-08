@@ -148,7 +148,7 @@ export default function AvaliacaoDetalhe() {
     const pageWidth = doc.internal.pageSize.getWidth();
     
     // Header
-    const corEmpresa = aval.empresa === 'Ceolin' ? [206, 43, 55] : [128, 130, 133]; // Fiat Red vs Jeep Gray
+    const corEmpresa: [number, number, number] = aval.empresa === 'Ceolin' ? [206, 43, 55] : [128, 130, 133]; // Fiat Red vs Jeep Gray
     const corAcento = aval.empresa === 'Ceolin' ? [0, 146, 70] : [35, 31, 32]; // Fiat Green vs Jeep Dark
     
     doc.setFillColor(corEmpresa[0], corEmpresa[1], corEmpresa[2]);
