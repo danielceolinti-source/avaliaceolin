@@ -33,18 +33,6 @@ export function Topbar() {
 
   return (
     <div className="flex flex-1 items-center gap-2 md:gap-3">
-      {/* Dynamic Logo Container */}
-      <div className="h-10 px-4 flex items-center bg-white rounded border mr-2 md:mr-3 shadow-sm">
-        <img 
-          src={logoSrc} 
-          alt={empresaFiltro} 
-          className="h-8 w-auto object-contain"
-          onError={(e) => {
-            // Fallback se a imagem não existir
-            (e.target as any).src = "https://placehold.co/120x40?text=LOGO";
-          }}
-        />
-      </div>
 
       <div className="relative flex-1 max-w-xl hidden lg:block">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
