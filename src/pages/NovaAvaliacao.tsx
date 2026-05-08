@@ -151,7 +151,7 @@ export default function NovaAvaliacao() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-bold">Nova Avaliação</h1>
-          <p className="text-muted-foreground text-sm mt-1">Foto da placa preenche placa, marca, modelo, ano, cor e combustível automaticamente.</p>
+          <p className="text-muted-foreground text-sm mt-1">Digite ou fotografe a placa. Selecione o veículo na FIPE para preencher automaticamente.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => salvar("Em Avaliação")} disabled={saving}>
@@ -166,7 +166,7 @@ export default function NovaAvaliacao() {
       <Card className="overflow-hidden border-primary/20">
         <div className="bg-gradient-hero text-white p-5 md:p-6">
           <div className="flex items-center gap-2 text-xs uppercase tracking-widest opacity-80">
-            <Sparkles className="h-3 w-3" /> Identificação automática · SimplesAPI + FIPE.Online
+            <Sparkles className="h-3 w-3" /> Placa via OCR · Veículo via FIPE.Online
           </div>
           <div className="mt-2 grid md:grid-cols-[1fr_auto] gap-4 items-end">
             <div>
@@ -187,7 +187,7 @@ export default function NovaAvaliacao() {
               </Button>
             </div>
           </div>
-          <p className="mt-3 text-xs text-white/60">Foto: SimplesAPI extrai placa + dados do veículo. FIPE: seleção encadeada marca → modelo → ano.</p>
+          <p className="mt-3 text-xs text-white/60">A foto identifica apenas a placa. Os dados do veículo (marca, modelo, ano, FIPE) são selecionados manualmente via FIPE.Online.</p>
         </div>
 
         <CardContent className="p-5 md:p-6 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
