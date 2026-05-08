@@ -8,8 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { STATUS_COLORS, Status } from "@/data/constants";
 
+import { dataBR, moedaBR as moeda } from "@/lib/format";
+
 const fmt = (n: number) => n.toLocaleString("pt-BR");
-const moeda = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 function Kpi({ icon: Icon, label, value, hint, accent }: any) {
   return (
@@ -33,11 +34,17 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
+    const load = async () => {
       const { data } = await supabase.from("avaliacoes").select("*").order("created_at", { ascending: false });
       setRows(data || []);
       setLoading(false);
-    })();
+    };
+    load();
+    // realtime: atualização automática das últimas avaliações
+    const ch = supabase.channel("avaliacoes-dash")
+      .on("postgres_changes", { event: "*", schema: "public", table: "avaliacoes" }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, []);
 
   const data = useMemo(() => rows.filter((a) => empresaFiltro === "Todas" || a.empresa === empresaFiltro), [rows, empresaFiltro]);
