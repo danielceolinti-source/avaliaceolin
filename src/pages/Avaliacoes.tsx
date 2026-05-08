@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/hooks/useRole";
-
+// v1.0.2 - Fixed hojeBR import
 import { dataBR, hojeBR, moedaBR as moeda } from "@/lib/format";
 import { downloadCSV, toCSV } from "@/lib/csv";
 
