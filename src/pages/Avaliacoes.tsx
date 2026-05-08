@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/hooks/useRole";
 
-import { dataBR, moedaBR as moeda } from "@/lib/format";
+import { dataBR, hojeBR, moedaBR as moeda } from "@/lib/format";
 import { downloadCSV, toCSV } from "@/lib/csv";
 
 export default function Avaliacoes() {
