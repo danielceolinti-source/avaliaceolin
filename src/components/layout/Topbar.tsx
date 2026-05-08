@@ -33,8 +33,6 @@ export function Topbar() {
 
   return (
     <div className="sticky top-0 z-40 w-full glass border-b px-4 py-2 flex items-center justify-between gap-3 shadow-sm transition-premium mb-5 -mx-4 md:-mx-6 w-[calc(100%+2rem)] md:w-[calc(100%+3rem)]">
-      <div className="flex flex-1 items-center gap-2 md:gap-3">
-
       <div className="flex-1 lg:hidden" />
 
       <div className="flex-1 lg:hidden" />
