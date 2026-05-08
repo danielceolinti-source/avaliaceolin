@@ -7,18 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Camera, ScanLine, Sparkles, Save, Send, Car, ChevronRight,
-  Wrench, ImagePlus, FileCheck2, Loader2,
+  Wrench, ImagePlus, FileCheck2, Loader2, User, Calendar,
 } from "lucide-react";
 import {
   EMPRESAS, ESTADO_GERAL, HISTORICO_OPCOES, NIVEL_AVARIAS,
-  OPCIONAIS, ORIGENS, VENDEDORES, Empresa,
+  OPCIONAIS, ORIGENS, VENDEDORES, Empresa, MODALIDADES, TAGS_OBS,
 } from "@/data/constants";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import FipePicker from "@/components/FipePicker";
 
 const moeda = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
@@ -31,8 +33,7 @@ function Chip({ active, onClick, children, tone = "default" }: any) {
     info: "data-[active=true]:bg-info data-[active=true]:text-info-foreground data-[active=true]:border-info",
   };
   return (
-    <button
-      type="button" onClick={onClick} data-active={active}
+    <button type="button" onClick={onClick} data-active={active}
       className={cn("h-10 px-4 rounded-full border bg-card text-sm font-medium transition-all hover:border-primary/40", tones[tone])}
     >{children}</button>
   );
@@ -54,6 +55,8 @@ export default function NovaAvaliacao() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [empresa, setEmpresa] = useState<Empresa>("Ceolin");
+  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
+  const [cliente, setCliente] = useState("");
   const [placa, setPlaca] = useState("");
   const [chassi, setChassi] = useState("");
   const [marca, setMarca] = useState("");
@@ -65,15 +68,17 @@ export default function NovaAvaliacao() {
   const [aval, setAval] = useState(0);
   const [vendedor, setVendedor] = useState("");
   const [origem, setOrigem] = useState("");
+  const [modalidade, setModalidade] = useState<"PRESENCIAL" | "FOTOS">("PRESENCIAL");
   const [estado, setEstado] = useState("");
   const [nivel, setNivel] = useState("");
   const [historico, setHistorico] = useState<string[]>([]);
   const [opcionais, setOpcionais] = useState<string[]>([]);
   const [obs, setObs] = useState("");
+  const [tagsObs, setTagsObs] = useState<string[]>([]);
   const [scanning, setScanning] = useState(false);
-  const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [avariasPecas, setAvariasPecas] = useState<string[]>([]);
+  const [fipeOpen, setFipeOpen] = useState(false);
 
   const toggle = (arr: string[], setArr: (v: string[]) => void, v: string) =>
     setArr(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -90,10 +95,19 @@ export default function NovaAvaliacao() {
       if (error) throw error;
       if (data?.placa) {
         setPlaca(data.placa);
-        toast.success("Placa identificada", { description: data.placa });
-        await buscarFipe(data.placa);
+        if (data.vehicle) {
+          if (data.vehicle.marca) setMarca(data.vehicle.marca);
+          if (data.vehicle.modelo) setModelo([data.vehicle.modelo, data.vehicle.versao].filter(Boolean).join(" ").trim());
+          if (data.vehicle.ano) setAno(data.vehicle.ano);
+          toast.success("Veículo identificado", { description: `${data.placa} • ${data.vehicle.marca} ${data.vehicle.modelo}` });
+          // sugere abrir FIPE encadeado para travar valor
+          setFipeOpen(true);
+        } else {
+          toast.success("Placa identificada", { description: data.placa });
+          setFipeOpen(true);
+        }
       } else {
-        toast.warning("Não consegui ler a placa", { description: "Digite manualmente." });
+        toast.warning(data?.message || "Não consegui ler a placa");
       }
     } catch (err: any) {
       toast.error("Falha no OCR", { description: err.message });
@@ -103,32 +117,13 @@ export default function NovaAvaliacao() {
     }
   };
 
-  const buscarFipe = async (p?: string) => {
-    const pl = (p || placa).trim();
-    if (!pl) return toast.warning("Informe a placa primeiro");
-    setSearching(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("fipe-lookup", { body: { placa: pl } });
-      if (error) throw error;
-      if (data?.ok) {
-        if (data.marca) setMarca(data.marca);
-        if (data.modelo) setModelo(data.modelo);
-        if (data.versao && !modelo.includes(data.versao)) setModelo((m) => `${m || data.modelo} ${data.versao}`.trim());
-        if (data.ano) setAno(String(data.ano));
-        if (data.chassi) setChassi(data.chassi);
-        if (data.fipe) {
-          setFipe(Number(data.fipe));
-          setAval(Math.round(Number(data.fipe) * 0.85));
-        }
-        toast.success("Dados FIPE carregados");
-      } else {
-        toast.info(data?.message || "Sem dados FIPE — preencha manualmente");
-      }
-    } catch (err: any) {
-      toast.error("Falha consulta FIPE", { description: err.message });
-    } finally {
-      setSearching(false);
-    }
+  const onResolveFipe = (d: { marca: string; modelo: string; versao?: string; ano: string; fipe: number }) => {
+    if (d.marca && !marca) setMarca(d.marca);
+    if (d.versao && !modelo) setModelo(d.versao);
+    if (d.ano && !ano) setAno(d.ano);
+    setFipe(d.fipe);
+    setAval(Math.round(d.fipe * 0.85));
+    setFipeOpen(false);
   };
 
   const salvar = async (status: "Em Avaliação" | "Finalizada") => {
@@ -137,12 +132,14 @@ export default function NovaAvaliacao() {
     setSaving(true);
     const { error } = await supabase.from("avaliacoes").insert({
       empresa, placa: placa.toUpperCase(), chassi: chassi || null,
+      cliente: cliente || null, modalidade, data_avaliacao: data,
       marca, modelo, ano, km: km ? Number(km) : null,
       fipe: fipe || null, custo: custo || null, avaliacao: aval || null,
       vendedor, origem: (origem as any) || null, status,
       estado_geral: estado || null, nivel_avarias: nivel || null,
       historico, opcionais, avarias: avariasPecas.map((p) => ({ peca: p })),
-      observacoes: obs || null, created_by: user.id, updated_by: user.id,
+      tags_obs: tagsObs, observacoes: obs || null,
+      created_by: user.id, updated_by: user.id,
     });
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -161,7 +158,7 @@ export default function NovaAvaliacao() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-bold">Nova Avaliação</h1>
-          <p className="text-muted-foreground text-sm mt-1">Fluxo otimizado para uso no pátio — finalize em menos de 1 minuto.</p>
+          <p className="text-muted-foreground text-sm mt-1">Foto da placa preenche placa, marca, modelo, ano, cor e combustível automaticamente.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => salvar("Em Avaliação")} disabled={saving}>
@@ -176,7 +173,7 @@ export default function NovaAvaliacao() {
       <Card className="overflow-hidden border-primary/20">
         <div className="bg-gradient-hero text-white p-5 md:p-6">
           <div className="flex items-center gap-2 text-xs uppercase tracking-widest opacity-80">
-            <Sparkles className="h-3 w-3" /> Identificação inteligente · Gemini Vision + FIPE
+            <Sparkles className="h-3 w-3" /> Identificação automática · SimplesAPI + FIPE.Online
           </div>
           <div className="mt-2 grid md:grid-cols-[1fr_auto] gap-4 items-end">
             <div>
@@ -192,18 +189,37 @@ export default function NovaAvaliacao() {
               <Button size="lg" variant="secondary" onClick={onPickPhoto} disabled={scanning} className="h-14">
                 {scanning ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Camera className="h-5 w-5 mr-2" />} Foto
               </Button>
-              <Button size="lg" onClick={() => buscarFipe()} disabled={searching} className="h-14 bg-primary hover:bg-primary/90">
-                {searching ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <ScanLine className="h-5 w-5 mr-2" />} Buscar
+              <Button size="lg" onClick={() => setFipeOpen(true)} className="h-14 bg-primary hover:bg-primary/90">
+                <ScanLine className="h-5 w-5 mr-2" /> FIPE
               </Button>
             </div>
           </div>
-          <p className="mt-3 text-xs text-white/60">OCR de placa + consulta FIPE automática.</p>
+          <p className="mt-3 text-xs text-white/60">Foto: SimplesAPI extrai placa + dados do veículo. FIPE: seleção encadeada marca → modelo → ano.</p>
         </div>
 
         <CardContent className="p-5 md:p-6 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="lg:col-span-2">
+            <Label className="flex items-center gap-1"><User className="h-3 w-3" /> Cliente</Label>
+            <Input value={cliente} onChange={(e) => setCliente(e.target.value)} className="mt-1.5" placeholder="Nome do cliente" />
+          </div>
+          <div>
+            <Label className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Data</Label>
+            <Input type="date" value={data} onChange={(e) => setData(e.target.value)} className="mt-1.5" />
+          </div>
+          <div>
+            <Label>Modalidade</Label>
+            <div className="mt-1.5 flex gap-2">
+              {MODALIDADES.map((m) => (
+                <Chip key={m} active={modalidade === m} onClick={() => setModalidade(m)} tone={m === "PRESENCIAL" ? "success" : "info"}>
+                  {m}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
           <div><Label>Marca</Label><Input value={marca} onChange={(e) => setMarca(e.target.value)} className="mt-1.5" /></div>
           <div className="lg:col-span-2"><Label>Modelo / Versão</Label><Input value={modelo} onChange={(e) => setModelo(e.target.value)} className="mt-1.5" /></div>
-          <div><Label>Ano/Modelo</Label><Input value={ano} onChange={(e) => setAno(e.target.value)} className="mt-1.5" /></div>
+          <div><Label>Ano/Modelo</Label><Input value={ano} onChange={(e) => setAno(e.target.value)} placeholder="24/24" className="mt-1.5 font-mono" /></div>
           <div><Label>Chassi</Label><Input value={chassi} onChange={(e) => setChassi(e.target.value.toUpperCase())} className="mt-1.5 font-mono uppercase" /></div>
           <div><Label>Quilometragem</Label><Input type="number" value={km} onChange={(e) => setKm(e.target.value)} className="mt-1.5" /></div>
           <div>
@@ -223,6 +239,15 @@ export default function NovaAvaliacao() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={fipeOpen} onOpenChange={setFipeOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-display">Buscar FIPE — seleção encadeada</DialogTitle>
+          </DialogHeader>
+          <FipePicker initialMarca={marca} initialModelo={modelo} initialAno={ano} onResolve={onResolveFipe} />
+        </DialogContent>
+      </Dialog>
 
       <div className="grid md:grid-cols-3 gap-4">
         <Card>
@@ -246,7 +271,7 @@ export default function NovaAvaliacao() {
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm">Origem</CardTitle></CardHeader>
           <CardContent>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {ORIGENS.map((o) => <Chip key={o} active={origem === o} onClick={() => setOrigem(o)} tone="info">{o}</Chip>)}
             </div>
           </CardContent>
@@ -302,7 +327,13 @@ export default function NovaAvaliacao() {
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Observações</CardTitle></CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <div>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Tags rápidas</Label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {TAGS_OBS.map((t) => <Chip key={t} active={tagsObs.includes(t)} onClick={() => toggle(tagsObs, setTagsObs, t)} tone="warn">{t}</Chip>)}
+            </div>
+          </div>
           <Textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={4} placeholder="Notas livres do avaliador…" />
         </CardContent>
       </Card>
