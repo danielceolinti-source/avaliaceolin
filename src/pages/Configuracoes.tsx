@@ -197,7 +197,7 @@ export default function Configuracoes() {
         .limit(50);
       
       if (error) throw error;
-      setLogs(data || []);
+      setLogs((data as any) || []);
     } catch (error: any) {
       toast.error("Erro ao carregar logs");
     } finally {
