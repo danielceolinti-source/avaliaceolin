@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { withTimeout } from "@/lib/utils-timeout";
 
 export type AppRole = "super_admin" | "ti" | "gestor" | "avaliador";
 
@@ -8,15 +9,36 @@ export function useRole() {
   const { user } = useAuth();
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) { setRoles([]); setLoading(false); return; }
+    let mounted = true;
+    if (!user) { 
+      setRoles([]); 
+      setLoading(false); 
+      return; 
+    }
+    
     (async () => {
       setLoading(true);
-      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
-      setRoles((data || []).map((r: any) => r.role));
-      setLoading(false);
+      setError(null);
+      try {
+        const { data } = await withTimeout(
+          supabase.from("user_roles").select("role").eq("user_id", user.id),
+          8000
+        );
+        if (mounted) {
+          setRoles((data || []).map((r: any) => r.role));
+        }
+      } catch (err: any) {
+        console.error("Erro ao carregar roles:", err);
+        if (mounted) setError(err.message === "TIMEOUT_EXCEEDED" ? "Tempo de resposta excedido (Roles)" : "Erro ao carregar permissões");
+      } finally {
+        if (mounted) setLoading(false);
+      }
     })();
+
+    return () => { mounted = false; };
   }, [user]);
 
   const isSuperAdmin = roles.includes("super_admin");
@@ -36,8 +58,8 @@ export function useRole() {
 
   const canEditAssessment = (createdBy: string | null) => {
     if (isSuperAdmin || isTI) return true;
-    if (isGestor) return true; // Gestor pode editar avaliações operacionais (todas)
-    if (isAvaliador && user?.id === createdBy) return true; // Avaliador edita as próprias
+    if (isGestor) return true;
+    if (isAvaliador && user?.id === createdBy) return true;
     return false;
   };
 
@@ -46,6 +68,7 @@ export function useRole() {
   return { 
     roles, 
     loading,
+    error,
     isSuperAdmin,
     isTI,
     isGestor,

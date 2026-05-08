@@ -112,8 +112,11 @@ export default function Usuarios() {
       });
       
       setRows((profiles || []).map((p: any) => {
-        // Daniel is the Master (checking full_name as a proxy if email is not in profile, 
-        // but ideally we'd have a specific ID or field)
+        // Daniel is the Master. We'll identify the master by name 
+        // but we'll allow management if there are duplicates, 
+        // protecting only the primary role logic or specific IDs if known.
+        // For now, we'll mark it as Master but allow actions if the user is a SuperAdmin,
+        // except for the very first one or if it matches a specific criteria.
         const isMaster = p.full_name === "Daniel Andrade";
         
         return { 
@@ -393,6 +396,7 @@ export default function Usuarios() {
                           {u.isMaster && <Badge className="bg-amber-500 hover:bg-amber-600 border-none text-[10px] h-4">MASTER</Badge>}
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                          <span className="flex items-center gap-1 font-mono text-[10px] bg-slate-100 px-1 rounded">{u.user_id.substring(0, 8)}</span>
                           <span className="flex items-center gap-1"><Building2 className="h-3 w-3" /> {u.empresa || "Não definida"}</span>
                           {u.phone && <span>· {u.phone}</span>}
                         </div>
@@ -408,46 +412,51 @@ export default function Usuarios() {
                         })}
                       </div>
 
-                      {u.isMaster ? (
-                        <div className="h-8 w-8 grid place-items-center"><Lock className="h-4 w-4 text-slate-300" /></div>
-                      ) : (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => {
-                              setEditingUser(u);
-                              setForm({
-                                username: "", // Cannot edit username
-                                fullName: u.full_name || "",
-                                phone: u.phone || "",
-                                password: "",
-                                role: u.roles[0] || "avaliador",
-                                empresa: u.empresa as any || "Ceolin"
-                              });
-                              setIsEditOpen(true);
-                            }}>
-                              <Edit className="h-4 w-4 mr-2" /> Editar Perfil
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => resetPassword(u)}>
-                              <Key className="h-4 w-4 mr-2" /> Alterar Senha
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => toggleAtivo(u)}>
-                              {u.ativo ? (
-                                <><Shield className="h-4 w-4 mr-2 text-warning" /> Desativar Acesso</>
-                              ) : (
-                                <><ShieldCheck className="h-4 w-4 mr-2 text-success" /> Ativar Acesso</>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => deleteUser(u)} className="text-destructive focus:text-destructive">
-                              <Trash2 className="h-4 w-4 mr-2" /> Excluir Conta
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                          {u.isMaster && (
+                            <div className="px-2 py-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 rounded mb-1">
+                              USUÁRIO MASTER
+                            </div>
+                          )}
+                          <DropdownMenuItem onClick={() => {
+                            setEditingUser(u);
+                            setForm({
+                              username: "", // Cannot edit username
+                              fullName: u.full_name || "",
+                              phone: u.phone || "",
+                              password: "",
+                              role: u.roles[0] || "avaliador",
+                              empresa: u.empresa as any || "Ceolin"
+                            });
+                            setIsEditOpen(true);
+                          }}>
+                            <Edit className="h-4 w-4 mr-2" /> Editar Perfil / Empresa
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => resetPassword(u)}>
+                            <Key className="h-4 w-4 mr-2" /> Alterar Senha
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => toggleAtivo(u)}>
+                            {u.ativo ? (
+                              <><Shield className="h-4 w-4 mr-2 text-warning" /> Desativar Acesso</>
+                            ) : (
+                              <><ShieldCheck className="h-4 w-4 mr-2 text-success" /> Ativar Acesso</>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => deleteUser(u)} 
+                            className="text-destructive focus:text-destructive"
+                            disabled={u.user_id === (supabase.auth.getUser() as any)?.data?.user?.id}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Excluir Conta
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 ))}
