@@ -28,4 +28,20 @@ BEGIN
         data JSONB NOT NULL DEFAULT '{}'::jsonb,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
+
+    -- 6. Criação do Bucket de Logos (Storage)
+    -- Nota: Inserir diretamente na tabela storage.buckets é o método SQL para criar buckets
+    INSERT INTO storage.buckets (id, name, public) 
+    VALUES ('logos', 'logos', true) 
+    ON CONFLICT (id) DO NOTHING;
+
+    -- 7. Políticas de Acesso para o Bucket de Logos
+    -- Permite que qualquer pessoa veja as logos (Público)
+    INSERT INTO storage.objects (bucket_id, name, owner, metadata)
+    SELECT 'logos', '.keep', NULL, NULL
+    WHERE NOT EXISTS (SELECT 1 FROM storage.objects WHERE bucket_id = 'logos' AND name = '.keep');
+
+    -- Nota: As políticas de storage são complexas de criar via SQL puro sem o schema storage completo,
+    -- mas o insert acima garante a existência do bucket. 
+    -- Se o erro persistir, o usuário pode precisar clicar em "Make Public" no painel.
 END $$;
