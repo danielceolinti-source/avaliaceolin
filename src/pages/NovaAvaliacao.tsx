@@ -42,12 +42,46 @@ function Chip({ active, onClick, children, tone = "default" }: any) {
 const ESTADO_TONE: Record<string, string> = { Excelente: "success", "Muito Bom": "success", Bom: "info", Regular: "warn", Ruim: "danger" };
 const AVARIA_TONE: Record<string, string> = { "Sem avarias": "success", Leve: "info", Moderado: "warn", Alto: "danger", Grave: "danger" };
 
-const fileToBase64 = (f: File) => new Promise<string>((res, rej) => {
-  const r = new FileReader();
-  r.onerror = () => rej(r.error);
-  r.onload = () => res(r.result as string);
-  r.readAsDataURL(f);
-});
+const processImage = async (file: File): Promise<{ b64: string; info: any }> => {
+  console.log(`[OCR] Processando arquivo: ${file.name} (${file.type}) - ${Math.round(file.size / 1024)}KB`);
+  
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        const MAX = 1200;
+
+        if (width > height && width > MAX) {
+          height *= MAX / width;
+          width = MAX;
+        } else if (height > MAX) {
+          width *= MAX / height;
+          height = MAX;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        const b64 = canvas.toDataURL("image/jpeg", 0.7);
+        console.log(`[OCR] Imagem otimizada: ${width}x${height} - ${Math.round(b64.length / 1024)}KB (Base64)`);
+        
+        resolve({ 
+          b64, 
+          info: { originalType: file.type, originalSize: file.size, newSize: b64.length } 
+        });
+      };
+      img.onerror = () => reject(new Error("Falha ao processar imagem."));
+    };
+    reader.onerror = () => reject(new Error("Falha ao ler arquivo."));
+  });
+};
 
 export default function NovaAvaliacao() {
   const { user } = useAuth();
@@ -88,23 +122,42 @@ export default function NovaAvaliacao() {
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
+
     setScanning(true);
+    const toastId = toast.loading("Lendo placa com IA...");
+    
     try {
-      const b64 = await fileToBase64(f);
-      const { data, error } = await supabase.functions.invoke("ocr-placa", { body: { imageBase64: b64 } });
+      const { b64 } = await processImage(f);
+      
+      console.log("[OCR] Chamando Edge Function...");
+      const { data, error } = await supabase.functions.invoke("ocr-placa", { 
+        body: { imageBase64: b64 } 
+      });
+
       if (error) throw error;
+      
+      console.log("[OCR] Resposta recebida:", data);
+
       if (data?.placa) {
-        setPlaca(data.placa);
-        toast.success("Placa identificada", { description: `${data.placa} — selecione o veículo na FIPE` });
+        const detectedPlaca = data.placa.toUpperCase().replace(/[^A-Z0-9]/g, "");
+        setPlaca(detectedPlaca);
+        toast.success("Placa identificada", { 
+          id: toastId,
+          description: `${detectedPlaca} — complete os dados via FIPE` 
+        });
         setFipeOpen(true);
       } else {
-        toast.warning(data?.message || "Não consegui ler a placa");
+        toast.warning(data?.message || "Não foi possível ler a placa. Digite manualmente.", { id: toastId });
       }
     } catch (err: any) {
-      toast.error("Falha no OCR", { description: err.message });
+      console.error("[OCR] Erro crítico:", err);
+      toast.error("Falha na leitura", { 
+        id: toastId,
+        description: "Verifique sua conexão ou tente novamente." 
+      });
     } finally {
       setScanning(false);
-      e.target.value = "";
+      if (e.target) e.target.value = "";
     }
   };
 
