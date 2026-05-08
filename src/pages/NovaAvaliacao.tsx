@@ -257,7 +257,7 @@ export default function NovaAvaliacao() {
           <CardContent>
             <Select value={vendedor} onValueChange={setVendedor}>
               <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>{VENDEDORES[empresa].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+              <SelectContent>{vendedores.map((v) => <SelectItem key={v.id} value={v.nome}>{v.nome}</SelectItem>)}</SelectContent>
             </Select>
           </CardContent>
         </Card>
