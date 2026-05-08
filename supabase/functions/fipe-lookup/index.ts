@@ -211,10 +211,8 @@ Deno.serve(async (req) => {
         placa: cleanPlaca,
         source,
         ...parsed,
-        fipe: {
-          brand,
-          suggestions, // [{code, name, score}]
-        },
+        fipe: { brand, suggestions },
+        debug,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
