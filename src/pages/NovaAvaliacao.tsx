@@ -144,13 +144,23 @@ export default function NovaAvaliacao() {
       console.log("[OCR] Resposta recebida:", data);
 
       if (data?.placa) {
-        const detectedPlaca = data.placa.toUpperCase().replace(/[^A-Z0-9]/g, "");
+        // Limpeza agressiva da placa
+        const detectedPlaca = data.placa.toUpperCase().replace(/[^A-Z0-9]/g, "").trim();
+        console.log("[OCR] Definindo placa no estado:", detectedPlaca);
+        
+        // Ordem de execução para garantir renderização no Android
+        setScanning(false);
         setPlaca(detectedPlaca);
+        
         toast.success("Placa identificada", { 
           id: toastId,
           description: `${detectedPlaca} — complete os dados via FIPE` 
         });
-        setFipeOpen(true);
+
+        // Pequeno delay para o Android renderizar o valor no input antes de abrir o modal
+        setTimeout(() => {
+          setFipeOpen(true);
+        }, 300);
       } else {
         toast.warning(data?.message || "Não foi possível ler a placa. Digite manualmente.", { id: toastId });
       }
