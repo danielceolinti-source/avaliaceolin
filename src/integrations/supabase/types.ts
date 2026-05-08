@@ -91,9 +91,11 @@ export type Database = {
           avaliacao: number | null
           avarias: Json | null
           chassi: string | null
+          cliente: string | null
           created_at: string
           created_by: string | null
           custo: number | null
+          data_avaliacao: string | null
           empresa: Database["public"]["Enums"]["empresa"]
           estado_geral: string | null
           fipe: number | null
@@ -101,6 +103,7 @@ export type Database = {
           id: string
           km: number | null
           marca: string | null
+          modalidade: string | null
           modelo: string | null
           nivel_avarias: string | null
           numero: number
@@ -109,6 +112,7 @@ export type Database = {
           origem: Database["public"]["Enums"]["origem"] | null
           placa: string
           status: Database["public"]["Enums"]["status_avaliacao"]
+          tags_obs: Json | null
           updated_at: string
           updated_by: string | null
           vendedor: string | null
@@ -119,9 +123,11 @@ export type Database = {
           avaliacao?: number | null
           avarias?: Json | null
           chassi?: string | null
+          cliente?: string | null
           created_at?: string
           created_by?: string | null
           custo?: number | null
+          data_avaliacao?: string | null
           empresa: Database["public"]["Enums"]["empresa"]
           estado_geral?: string | null
           fipe?: number | null
@@ -129,6 +135,7 @@ export type Database = {
           id?: string
           km?: number | null
           marca?: string | null
+          modalidade?: string | null
           modelo?: string | null
           nivel_avarias?: string | null
           numero?: number
@@ -137,6 +144,7 @@ export type Database = {
           origem?: Database["public"]["Enums"]["origem"] | null
           placa: string
           status?: Database["public"]["Enums"]["status_avaliacao"]
+          tags_obs?: Json | null
           updated_at?: string
           updated_by?: string | null
           vendedor?: string | null
@@ -147,9 +155,11 @@ export type Database = {
           avaliacao?: number | null
           avarias?: Json | null
           chassi?: string | null
+          cliente?: string | null
           created_at?: string
           created_by?: string | null
           custo?: number | null
+          data_avaliacao?: string | null
           empresa?: Database["public"]["Enums"]["empresa"]
           estado_geral?: string | null
           fipe?: number | null
@@ -157,6 +167,7 @@ export type Database = {
           id?: string
           km?: number | null
           marca?: string | null
+          modalidade?: string | null
           modelo?: string | null
           nivel_avarias?: string | null
           numero?: number
@@ -165,6 +176,7 @@ export type Database = {
           origem?: Database["public"]["Enums"]["origem"] | null
           placa?: string
           status?: Database["public"]["Enums"]["status_avaliacao"]
+          tags_obs?: Json | null
           updated_at?: string
           updated_by?: string | null
           vendedor?: string | null
