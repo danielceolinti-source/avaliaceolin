@@ -291,28 +291,6 @@ export default function Configuracoes() {
                       }}
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label>Logotipo da Unidade</Label>
-                    <div className="flex items-center gap-4 p-3 border rounded-lg bg-slate-50/50">
-                      <div className="h-12 w-12 rounded bg-white border grid place-items-center overflow-hidden">
-                        {emp.logo_url ? <img src={emp.logo_url} className="h-full w-auto object-contain" /> : <ImageIcon className="h-6 w-6 text-muted-foreground" />}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-[10px] text-muted-foreground mb-2">PNG ou SVG fundo transparente</p>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="h-8 gap-2"
-                          onClick={() => {
-                            const input = document.getElementById(`logo-upload-${emp.id}`);
-                            input?.click();
-                          }}
-                        >
-                          <Upload className="h-3 w-3" /> Alterar Logo
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
                   <Button 
                     onClick={() => saveConfig(empresasData)} 
                     disabled={loadingConfig}
