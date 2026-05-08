@@ -119,14 +119,25 @@ export default function Configuracoes() {
     setLoadingPerfil(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      // Tenta salvar todos os campos
       const { error } = await supabase.from("profiles").update({
         full_name: perfil.full_name,
         email_corporativo: perfil.email_corporativo,
         telefone: perfil.telefone
       }).eq("user_id", user.id);
       
-      if (error) toast.error("Erro ao salvar perfil");
-      else toast.success("Perfil atualizado com sucesso");
+      if (error) {
+        // Se falhar, tenta salvar apenas o básico (compatibilidade)
+        console.warn("Falha ao salvar campos estendidos, tentando salvar apenas full_name", error);
+        const { error: errorBasic } = await supabase.from("profiles").update({
+          full_name: perfil.full_name
+        }).eq("user_id", user.id);
+
+        if (errorBasic) toast.error("Erro ao salvar perfil básico");
+        else toast.warning("Nome salvo, mas campos de contato exigem sincronização do banco.");
+      } else {
+        toast.success("Perfil atualizado com sucesso");
+      }
     }
     setLoadingPerfil(false);
   };
@@ -357,10 +368,19 @@ export default function Configuracoes() {
                   <Input value={perfil.telefone} onChange={e => setPerfil({...perfil, telefone: e.target.value})} placeholder="(27) 99999-0000" />
                 </div>
               </div>
-              <Button onClick={savePerfil} disabled={loadingPerfil} className="gap-2">
-                {loadingPerfil ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} 
-                Atualizar Dados do Perfil
-              </Button>
+              <div className="pt-6 border-t flex flex-col gap-4">
+                <div className="flex items-start gap-3 text-amber-600 bg-amber-50 p-4 rounded-xl text-xs border border-amber-100">
+                  <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold">Sincronização Necessária</p>
+                    <p className="leading-relaxed">Caso o E-mail ou Telefone não salvem, o administrador deve executar o script SQL de migração no painel do Supabase para atualizar a tabela de perfis.</p>
+                  </div>
+                </div>
+                <Button onClick={savePerfil} disabled={loadingPerfil} className="w-full md:w-auto h-12 gap-2 bg-[#1a1a1a] hover:bg-[#CE2B37] transition-all rounded-xl font-bold uppercase tracking-widest text-xs">
+                  {loadingPerfil ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} 
+                  Atualizar Dados do Perfil
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
