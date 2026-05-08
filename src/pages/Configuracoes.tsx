@@ -78,7 +78,7 @@ export default function Configuracoes() {
 
   const loadConfig = async () => {
     setLoadingConfig(true);
-    const { data } = await supabase.from("app_settings").select("*").eq("id", "config").single();
+    const { data } = await (supabase as any).from("app_settings").select("*").eq("id", "config").single();
     if (data?.data?.empresas) {
       setEmpresasData(data.data.empresas);
     }
@@ -87,7 +87,7 @@ export default function Configuracoes() {
 
   const saveConfig = async (newData: any) => {
     setLoadingConfig(true);
-    const { error } = await supabase.from("app_settings").upsert({
+    const { error } = await (supabase as any).from("app_settings").upsert({
       id: "config",
       data: { empresas: newData },
       updated_at: new Date().toISOString()
