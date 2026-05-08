@@ -25,20 +25,20 @@ function parseValor(s: string): number {
   return Number(m[1].replace(/\./g, "")) + Number(m[2]) / 100;
 }
 
-async function firecrawlScrape(url: string): Promise<{ html?: string; markdown?: string } | null> {
+async function firecrawlScrape(url: string): Promise<{ html?: string; markdown?: string; rawHtml?: string; _status?: number; _keys?: string[] } | null> {
   if (!FIRECRAWL_KEY) return null;
   const r = await fetch("https://api.firecrawl.dev/v2/scrape", {
     method: "POST",
     headers: { Authorization: `Bearer ${FIRECRAWL_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ url, formats: ["html", "markdown"], onlyMainContent: false, waitFor: 1500 }),
+    body: JSON.stringify({ url, formats: ["html", "rawHtml", "markdown"], onlyMainContent: false, waitFor: 2000 }),
   });
   const data = await r.json().catch(() => null);
   if (!r.ok || !data) {
     console.error("firecrawl error", r.status, data);
-    return null;
+    return { _status: r.status, _keys: [] };
   }
-  // v2 shape: { success, data: { html, markdown, metadata } }
-  return data?.data ?? data;
+  const d = data?.data ?? data;
+  return { ...d, _status: r.status, _keys: Object.keys(d || {}) };
 }
 
 function parsePlacafipe(html: string) {
