@@ -10,6 +10,7 @@ import { useApp } from "@/store/app";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useRole } from "@/hooks/useRole";
 
 import { dataBR, moedaBR as moeda } from "@/lib/format";
 import { downloadCSV, toCSV } from "@/lib/csv";
