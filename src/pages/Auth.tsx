@@ -66,7 +66,7 @@ export default function Auth() {
           <div className="flex items-center gap-4 animate-in fade-in slide-in-from-top duration-700">
              <img src="/logos/ceolin_login.png" alt="Ceolin" className="h-12 w-auto object-contain brightness-0 invert" />
              <div className="h-8 w-[1px] bg-white/20 mx-2" />
-             <span className="text-white/40 text-[10px] uppercase tracking-[0.4em] font-light">Gestão de Ativos</span>
+             <span className="text-white/40 text-[10px] uppercase tracking-[0.4em] font-light">Avaliação de Seminovos</span>
           </div>
 
           <div className="max-w-xl animate-in fade-in slide-in-from-left duration-1000 delay-300">
@@ -75,7 +75,7 @@ export default function Auth() {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#CE2B37] to-white/40">PROFISSIONAL.</span>
             </h1>
             <p className="text-white/50 mt-8 text-lg font-light leading-relaxed max-w-sm">
-              Potencializando a inteligência do Grupo Ceolin com precisão cirúrgica no mercado de seminovos.
+              Avaliação inteligente, decisões mais rápidas, resultados superiores.
             </p>
           </div>
 
