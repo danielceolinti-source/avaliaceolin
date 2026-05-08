@@ -131,6 +131,34 @@ export default function Configuracoes() {
     setLoadingPerfil(false);
   };
 
+  const uploadLogo = async (e: React.ChangeEvent<HTMLInputElement>, empresaId: string, idx: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `public/${empresaId}-logo-${Date.now()}.${ext}`;
+      
+      const { error: upErr } = await supabase.storage
+        .from("logos")
+        .upload(path, file, { upsert: true });
+
+      if (upErr) throw upErr;
+
+      const { data: { publicUrl } } = supabase.storage.from("logos").getPublicUrl(path);
+
+      const next = [...empresasData];
+      next[idx].logo_url = publicUrl;
+      setEmpresasData(next);
+      
+      // Salva automaticamente após upload
+      await saveConfig(next);
+      toast.success("Logo atualizada com sucesso!");
+    } catch (err: any) {
+      toast.error("Erro no upload da logo", { description: err.message });
+    }
+  };
+
   const loadLogs = async () => {
     setLoadingLogs(true);
     try {
@@ -178,6 +206,17 @@ export default function Configuracoes() {
 
         {/* 1. EMPRESAS */}
         <TabsContent value="empresas" className="space-y-4">
+          <input 
+            type="file" 
+            id="logo-upload" 
+            hidden 
+            accept="image/*" 
+            onChange={(e) => {
+              const empId = (e.target as any).dataset.empId;
+              const idx = (e.target as any).dataset.idx;
+              uploadLogo(e, empId, Number(idx));
+            }} 
+          />
           <div className="grid md:grid-cols-2 gap-6">
             {empresasData.map((emp, idx) => (
               <Card key={emp.id} className="overflow-hidden border-none shadow-md">
@@ -240,7 +279,17 @@ export default function Configuracoes() {
                       </div>
                       <div className="flex-1">
                         <p className="text-[10px] text-muted-foreground mb-2">PNG ou SVG fundo transparente</p>
-                        <Button size="sm" variant="outline" className="h-8 gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 gap-2"
+                          onClick={() => {
+                            const input = document.getElementById('logo-upload') as any;
+                            input.dataset.empId = emp.id;
+                            input.dataset.idx = idx;
+                            input.click();
+                          }}
+                        >
                           <Upload className="h-3 w-3" /> Alterar Logo
                         </Button>
                       </div>
