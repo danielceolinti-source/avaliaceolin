@@ -274,7 +274,10 @@ export default function AvaliacaoDetalhe() {
             <Button variant="outline" onClick={() => mudarStatus("Não Comprado")} className="border-destructive/40 text-destructive hover:bg-destructive/10"><X className="h-4 w-4 mr-2" /> Não Comprado</Button>
             <Button variant="outline" onClick={() => mudarStatus("Cancelado")}><Ban className="h-4 w-4 mr-2" /> Cancelar</Button>
             {aval.status === "Em Avaliação" && (
-              <Button onClick={() => mudarStatus("Finalizada")} className="bg-gradient-primary text-primary-foreground shadow-glow"><Check className="h-4 w-4 mr-2" /> Finalizar</Button>
+              <>
+                <Button variant="outline" onClick={() => mudarStatus("Avaliado")} className="border-info/40 text-info hover:bg-info/10"><Check className="h-4 w-4 mr-2" /> Marcar como Avaliado</Button>
+                <Button onClick={() => mudarStatus("Finalizada")} className="bg-gradient-primary text-primary-foreground shadow-glow"><Check className="h-4 w-4 mr-2" /> Finalizar</Button>
+              </>
             )}
           </div>
         )}

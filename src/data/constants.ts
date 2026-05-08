@@ -37,6 +37,7 @@ export type Modalidade = (typeof MODALIDADES)[number];
 
 export const STATUS = [
   "Em Avaliação",
+  "Avaliado",
   "Finalizada",
   "Comprado",
   "Não Comprado",
@@ -79,9 +80,10 @@ export const TAGS_OBS = [
 ] as const;
 
 export const STATUS_COLORS: Record<Status, string> = {
-  "Em Avaliação": "bg-info/15 text-info border-info/30",
-  Finalizada: "bg-muted text-foreground border-border",
-  Comprado: "bg-success/15 text-success border-success/30",
+  "Em Avaliação": "bg-warning/15 text-warning border-warning/30",
+  "Avaliado": "bg-info/15 text-info border-info/30",
+  "Finalizada": "bg-success/15 text-success border-success/30",
+  "Comprado": "bg-success text-success-foreground border-success/30",
   "Não Comprado": "bg-destructive/15 text-destructive border-destructive/30",
   Cancelado: "bg-muted text-muted-foreground border-border",
 };

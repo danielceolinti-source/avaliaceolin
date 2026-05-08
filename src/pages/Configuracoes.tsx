@@ -59,6 +59,8 @@ export default function Configuracoes() {
 
   const canEditKeys = isSuperAdmin || isTI;
 
+  const [empresasData, setEmpresasData] = useState<any[]>(EMPRESAS);
+  const [loadingConfig, setLoadingConfig] = useState(false);
   const [perfil, setPerfil] = useState({
     full_name: "",
     email_corporativo: "",
@@ -70,7 +72,33 @@ export default function Configuracoes() {
   useEffect(() => {
     if (activeTab === "auditoria") loadLogs();
     if (activeTab === "perfil") loadPerfil();
+    if (activeTab === "empresas") loadConfig();
   }, [activeTab]);
+
+  const loadConfig = async () => {
+    setLoadingConfig(true);
+    const { data } = await supabase.from("app_settings").select("*").eq("id", "config").single();
+    if (data?.data?.empresas) {
+      setEmpresasData(data.data.empresas);
+    }
+    setLoadingConfig(false);
+  };
+
+  const saveConfig = async (newData: any) => {
+    setLoadingConfig(true);
+    const { error } = await supabase.from("app_settings").upsert({
+      id: "config",
+      data: { empresas: newData },
+      updated_at: new Date().toISOString()
+    });
+    
+    if (error) toast.error("Erro ao salvar configurações globais");
+    else {
+      toast.success("Configurações aplicadas para todo o sistema");
+      setEmpresasData(newData);
+    }
+    setLoadingConfig(false);
+  };
 
   const loadPerfil = async () => {
     setLoadingPerfil(true);
@@ -151,26 +179,42 @@ export default function Configuracoes() {
         {/* 1. EMPRESAS */}
         <TabsContent value="empresas" className="space-y-4">
           <div className="grid md:grid-cols-2 gap-6">
-            {EMPRESAS.map((emp) => (
+            {empresasData.map((emp, idx) => (
               <Card key={emp.id} className="overflow-hidden border-none shadow-md">
-                <div className={`h-2 ${emp.id === 'Ceolin' ? 'bg-[#00529b]' : 'bg-[#e31d1a]'}`} />
+                <div className={`h-2`} style={{ backgroundColor: emp.id === 'Ceolin' ? (emp.cor || '#CE2B37') : (emp.cor || '#808285') }} />
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     {emp.nome}
-                    <Badge variant="outline">Ativa</Badge>
+                    <Badge variant="outline">{emp.ativo !== false ? 'Ativa' : 'Inativa'}</Badge>
                   </CardTitle>
                   <CardDescription>ID: {emp.id}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-2">
                     <Label>Nome de Exibição</Label>
-                    <Input defaultValue={emp.nome} />
+                    <Input 
+                      value={emp.nome} 
+                      onChange={e => {
+                        const next = [...empresasData];
+                        next[idx].nome = e.target.value;
+                        setEmpresasData(next);
+                      }} 
+                    />
                   </div>
                   <div className="grid gap-2">
-                    <Label>Cores do Tema</Label>
+                    <Label>Cor Primária</Label>
                     <div className="flex items-center gap-4">
-                      <div className={`h-10 w-10 rounded border ${emp.id === 'Ceolin' ? 'bg-[#00529b]' : 'bg-[#e31d1a]'}`} />
-                      <Input placeholder="#Hex Color" defaultValue={emp.id === 'Ceolin' ? '#00529b' : '#e31d1a'} className="font-mono text-xs" />
+                      <div className="h-10 w-10 rounded border" style={{ backgroundColor: emp.cor || (emp.id === 'Ceolin' ? '#CE2B37' : '#808285') }} />
+                      <Input 
+                        placeholder="#Hex Color" 
+                        value={emp.cor || (emp.id === 'Ceolin' ? '#CE2B37' : '#808285')} 
+                        onChange={e => {
+                          const next = [...empresasData];
+                          next[idx].cor = e.target.value;
+                          setEmpresasData(next);
+                        }}
+                        className="font-mono text-xs" 
+                      />
                       <Button variant="outline" size="icon"><Palette className="h-4 w-4" /></Button>
                     </div>
                   </div>
@@ -179,41 +223,41 @@ export default function Configuracoes() {
                       <Label>Status da Empresa</Label>
                       <p className="text-[10px] text-muted-foreground">Desativar remove das opções de avaliação</p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch 
+                      checked={emp.ativo !== false} 
+                      onCheckedChange={checked => {
+                        const next = [...empresasData];
+                        next[idx].ativo = checked;
+                        setEmpresasData(next);
+                      }}
+                    />
                   </div>
                   <div className="grid gap-2">
                     <Label>Logotipo da Unidade</Label>
                     <div className="flex items-center gap-4 p-3 border rounded-lg bg-slate-50/50">
                       <div className="h-12 w-12 rounded bg-white border grid place-items-center overflow-hidden">
-                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                        {emp.logo_url ? <img src={emp.logo_url} className="h-full w-auto object-contain" /> : <ImageIcon className="h-6 w-6 text-muted-foreground" />}
                       </div>
                       <div className="flex-1">
-                        <p className="text-[10px] text-muted-foreground mb-2">PNG ou SVG fundo transparente (max 500kb)</p>
+                        <p className="text-[10px] text-muted-foreground mb-2">PNG ou SVG fundo transparente</p>
                         <Button size="sm" variant="outline" className="h-8 gap-2">
                           <Upload className="h-3 w-3" /> Alterar Logo
                         </Button>
                       </div>
                     </div>
                   </div>
-                  <Button className="w-full gap-2 mt-4" variant="secondary">
-                    <Save className="h-4 w-4" /> Salvar Alterações
+                  <Button 
+                    onClick={() => saveConfig(empresasData)} 
+                    disabled={loadingConfig}
+                    className="w-full gap-2 mt-4" 
+                    variant="secondary"
+                  >
+                    {loadingConfig ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} 
+                    Salvar Alterações
                   </Button>
                 </CardContent>
               </Card>
             ))}
-            
-            <Card className="border-dashed border-2 bg-muted/20">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">Logo do Grupo (Ambas)</CardTitle>
-                <CardDescription>Exibida quando "Todas empresas" estiver selecionado.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="h-24 rounded-lg border bg-white grid place-items-center">
-                   <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
-                </div>
-                <Button variant="outline" className="w-full gap-2"><Upload className="h-4 w-4" /> Upload Logo Grupo</Button>
-              </CardContent>
-            </Card>
           </div>
         </TabsContent>
 
