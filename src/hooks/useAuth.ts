@@ -37,28 +37,25 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true;
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       if (!mounted) return;
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) await checkStatus(s.user);
+      // Apenas verifica status em eventos de login real (não em refresh/tab focus)
+      if (s?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+        setTimeout(() => { checkStatus(s.user); }, 0);
+      }
     });
 
     const initSession = async () => {
       try {
-        console.log("Iniciando recuperação de sessão...");
-        // Tenta recuperar sessão existente sem disparar loading false imediatamente
         const { data, error: sessionError } = await withTimeout(supabase.auth.getSession(), 8000);
-        
         if (sessionError) throw sessionError;
         if (!mounted) return;
-        
-        console.log("Sessão recuperada:", data.session ? "Sucesso" : "Nenhuma sessão ativa");
 
         if (data.session) {
           setSession(data.session);
           setUser(data.session.user);
-          await checkStatus(data.session.user);
         }
       } catch (err: any) {
         console.error("Falha ao inicializar sessão:", err);
