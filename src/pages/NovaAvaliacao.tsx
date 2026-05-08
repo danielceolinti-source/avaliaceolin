@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVendedores } from "@/hooks/useVendedores";
 import { hojeBR, moedaBR as moeda } from "@/lib/format";
 import FipePicker from "@/components/FipePicker";
+import { withTimeout } from "@/lib/utils-timeout";
 
 function Chip({ active, onClick, children, tone = "default" }: any) {
   const tones: Record<string, string> = {
@@ -43,14 +44,14 @@ const ESTADO_TONE: Record<string, string> = { Excelente: "success", "Muito Bom":
 const AVARIA_TONE: Record<string, string> = { "Sem avarias": "success", Leve: "info", Moderado: "warn", Alto: "danger", Grave: "danger" };
 
 const processImage = async (file: File): Promise<{ b64: string; info: any }> => {
-  console.log(`[OCR] Processando arquivo: ${file.name} (${file.type}) - ${Math.round(file.size / 1024)}KB`);
-  
   return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error("Tempo esgotado ao processar imagem.")), 8000);
+    
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
-      img.src = e.target?.result as string;
       img.onload = () => {
+        clearTimeout(timeout);
         const canvas = document.createElement("canvas");
         let width = img.width;
         let height = img.height;
@@ -70,16 +71,19 @@ const processImage = async (file: File): Promise<{ b64: string; info: any }> => 
         ctx?.drawImage(img, 0, 0, width, height);
         
         const b64 = canvas.toDataURL("image/jpeg", 0.7);
-        console.log(`[OCR] Imagem otimizada: ${width}x${height} - ${Math.round(b64.length / 1024)}KB (Base64)`);
-        
-        resolve({ 
-          b64, 
-          info: { originalType: file.type, originalSize: file.size, newSize: b64.length } 
-        });
+        resolve({ b64, info: { originalSize: file.size, newSize: b64.length } });
       };
-      img.onerror = () => reject(new Error("Falha ao processar imagem."));
+      img.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error("Falha ao processar imagem."));
+      };
+      img.src = e.target?.result as string;
     };
-    reader.onerror = () => reject(new Error("Falha ao ler arquivo."));
+    reader.onerror = () => {
+      clearTimeout(timeout);
+      reject(new Error("Falha ao ler arquivo."));
+    };
+    reader.readAsDataURL(file);
   });
 };
 
@@ -129,10 +133,11 @@ export default function NovaAvaliacao() {
     try {
       const { b64 } = await processImage(f);
       
-      console.log("[OCR] Chamando Edge Function...");
-      const { data, error } = await supabase.functions.invoke("ocr-placa", { 
-        body: { imageBase64: b64 } 
-      });
+      console.log("[OCR] Chamando Edge Function com timeout de 15s...");
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke("ocr-placa", { body: { imageBase64: b64 } }),
+        15000
+      );
 
       if (error) throw error;
       
@@ -151,10 +156,8 @@ export default function NovaAvaliacao() {
       }
     } catch (err: any) {
       console.error("[OCR] Erro crítico:", err);
-      toast.error("Falha na leitura", { 
-        id: toastId,
-        description: "Verifique sua conexão ou tente novamente." 
-      });
+      const msg = err.message === "TIMEOUT_EXCEEDED" ? "O servidor demorou muito a responder" : "Falha na leitura da placa";
+      toast.error(msg, { id: toastId });
     } finally {
       setScanning(false);
       if (e.target) e.target.value = "";
