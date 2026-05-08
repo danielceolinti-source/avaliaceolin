@@ -2,7 +2,7 @@
  * Utilitário para garantir que uma Promise não rode infinitamente.
  * Se o tempo ultrapassar o limite, a Promise é rejeitada.
  */
-export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 10000): Promise<T> {
+export async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number = 10000): Promise<T> {
   let timeoutId: any;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
