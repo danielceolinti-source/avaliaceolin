@@ -38,14 +38,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border">
-      <SidebarHeader className="border-b border-sidebar-border h-14 px-4 flex flex-row items-center gap-2">
-        <div className="h-8 w-8 rounded-md bg-gradient-primary grid place-items-center text-primary-foreground font-display font-bold shadow-glow shrink-0">
-          C
+      <SidebarHeader className="border-b border-sidebar-border h-14 px-4 flex flex-row items-center gap-2 overflow-hidden">
+        <div className="h-8 w-auto flex items-center justify-center shrink-0">
+          <img src="/logos/ceolin_login.png" alt="Ceolin" className="h-6 w-auto object-contain" />
         </div>
         {!collapsed && (
           <div className="leading-tight">
-            <div className="font-display font-bold text-sidebar-foreground">Avalia Ceolin</div>
-            <div className="text-[10px] uppercase tracking-widest text-sidebar-foreground/60">Grupo Ceolin</div>
+            <div className="font-display font-bold text-xs text-sidebar-foreground">GRUPO CEOLIN</div>
+            <div className="text-[9px] uppercase tracking-widest text-sidebar-foreground/50">Avaliação Técnica</div>
           </div>
         )}
       </SidebarHeader>

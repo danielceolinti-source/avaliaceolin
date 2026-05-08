@@ -52,11 +52,7 @@ export default function Auth() {
     <div className="min-h-screen flex bg-gradient-hero">
       <div className="hidden md:flex flex-1 flex-col justify-between p-10 text-white">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-md bg-gradient-primary grid place-items-center font-display font-bold shadow-glow">C</div>
-          <div>
-            <div className="font-display font-bold text-lg">Avalia Ceolin</div>
-            <div className="text-xs uppercase tracking-widest text-white/60">Grupo Ceolin</div>
-          </div>
+          <img src="/logos/ceolin_login.png" alt="Ceolin" className="h-10 w-auto object-contain" />
         </div>
         <div>
           <h1 className="font-display text-5xl font-bold leading-tight">Avaliação de seminovos<br/>com velocidade premium.</h1>
@@ -69,11 +65,11 @@ export default function Auth() {
         <Card className="w-full max-w-md border-none shadow-2xl overflow-hidden">
           <div className="h-2 bg-gradient-primary w-full" />
           <CardContent className="p-8">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="h-12 w-12 rounded-xl bg-gradient-primary grid place-items-center text-primary-foreground font-display font-bold shadow-lg shadow-primary/20 text-xl">C</div>
-              <div>
-                <h2 className="font-display text-2xl font-bold tracking-tight">Acesso Restrito</h2>
-                <p className="text-sm text-muted-foreground">Identifique-se para continuar.</p>
+            <div className="flex flex-col items-center gap-6 mb-8 pt-2">
+              <img src="/logos/ceolin_login.png" alt="Ceolin" className="h-16 w-auto object-contain" />
+              <div className="text-center">
+                <h2 className="font-display text-xl font-bold tracking-tight">Acesso Restrito</h2>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Identifique-se para continuar</p>
               </div>
             </div>
 

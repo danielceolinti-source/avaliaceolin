@@ -12,8 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  ChevronLeft, Camera, Loader2, Trash2, Check, X, ShoppingCart, Ban, ImagePlus, Pencil, Save, ScanLine,
+  ChevronLeft, Camera, Loader2, Trash2, Check, X, ShoppingCart, Ban, ImagePlus, Pencil, Save, ScanLine, FileDown
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { dataBR } from "@/lib/format";
 import { toast } from "sonner";
 import { STATUS, STATUS_COLORS, Status, MODALIDADES, ORIGENS, EMPRESAS } from "@/data/constants";
 import { moedaBR as moeda } from "@/lib/format";
@@ -35,6 +38,7 @@ export default function AvaliacaoDetalhe() {
   const [draft, setDraft] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [fipeOpen, setFipeOpen] = useState(false);
+  const [perfilAvaliador, setPerfilAvaliador] = useState<any>(null);
   const { vendedores } = useVendedores(draft?.empresa);
 
   const podeEditar = !!aval && canEditAssessment(aval.created_by);
@@ -54,6 +58,12 @@ export default function AvaliacaoDetalhe() {
       }));
       setFotos(withUrls);
     }
+    
+    if (data?.created_by) {
+      const { data: p } = await supabase.from("profiles").select("*").eq("user_id", data.created_by).single();
+      setPerfilAvaliador(p);
+    }
+    
     setLoading(false);
   };
 
@@ -118,6 +128,86 @@ export default function AvaliacaoDetalhe() {
     await load();
   };
 
+  const gerarPDF = () => {
+    if (!aval) return;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    const corEmpresa = aval.empresa === 'Ceolin' ? [206, 43, 55] : [128, 130, 133]; // Fiat Red vs Jeep Gray
+    const corAcento = aval.empresa === 'Ceolin' ? [0, 146, 70] : [35, 31, 32]; // Fiat Green vs Jeep Dark
+    
+    doc.setFillColor(corEmpresa[0], corEmpresa[1], corEmpresa[2]);
+    doc.rect(0, 0, pageWidth, 40, "F");
+    
+    // Suporte a detalhe em verde para Ceolin no header
+    if (aval.empresa === 'Ceolin') {
+      doc.setFillColor(0, 146, 70);
+      doc.rect(0, 38, pageWidth, 2, "F");
+    }
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text(aval.empresa.toUpperCase(), 15, 22);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("RELATÓRIO DE AVALIAÇÃO TÉCNICA", 15, 32);
+    
+    doc.text(`Nº ${aval.numero || id?.slice(0,8)}`, pageWidth - 15, 22, { align: "right" });
+    doc.text(dataBR(aval.data_avaliacao || aval.created_at), pageWidth - 15, 32, { align: "right" });
+
+    // Vehicle Info
+    doc.setTextColor(31, 41, 55);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${aval.marca} ${aval.modelo}`, 15, 55);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`${aval.versao || ''}`, 15, 62);
+
+    autoTable(doc, {
+      startY: 70,
+      head: [["Placa", "Ano", "KM", "Cor", "Combustível"]],
+      body: [[aval.placa, aval.ano, aval.km?.toLocaleString('pt-BR') || '—', aval.cor || '—', aval.combustivel || '—']],
+      theme: 'striped',
+      headStyles: { fillColor: corEmpresa }
+    });
+
+    // Values
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 10,
+      head: [["FIPE", "Preço Sugerido", "Valor Avaliação"]],
+      body: [[moeda(aval.fipe), moeda(aval.custo), moeda(aval.avaliacao)]],
+      theme: 'grid',
+      headStyles: { fillColor: [71, 85, 105] },
+      styles: { fontSize: 12, fontStyle: 'bold', halign: 'center' }
+    });
+
+    // Evaluator Info (The requested feature)
+    const finalY = (doc as any).lastAutoTable.finalY + 20;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("RESPONSÁVEL PELA AVALIAÇÃO", 15, finalY);
+    
+    doc.setFont("helvetica", "normal");
+    doc.text(`Nome: ${perfilAvaliador?.full_name || aval.created_by_name || '—'}`, 15, finalY + 7);
+    doc.text(`E-mail: ${perfilAvaliador?.email_corporativo || '—'}`, 15, finalY + 13);
+    doc.text(`WhatsApp: ${perfilAvaliador?.telefone || '—'}`, 15, finalY + 19);
+
+    if (aval.observacoes) {
+      doc.setFont("helvetica", "bold");
+      doc.text("OBSERVAÇÕES TÉCNICAS", 15, finalY + 35);
+      doc.setFont("helvetica", "normal");
+      const splitObs = doc.splitTextToSize(aval.observacoes, pageWidth - 30);
+      doc.text(splitObs, 15, finalY + 42);
+    }
+
+    doc.save(`avaliacao-${aval.placa}-${aval.modelo}.pdf`);
+    toast.success("PDF gerado");
+  };
+
   const excluir = async () => {
     if (!id || !confirm("Excluir esta avaliação? Esta ação é irreversível.")) return;
     const { error } = await supabase.from("avaliacoes").delete().eq("id", id);
@@ -144,6 +234,11 @@ export default function AvaliacaoDetalhe() {
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ChevronLeft className="h-4 w-4 mr-1" /> Voltar</Button>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className={STATUS_COLORS[aval.status as Status]}>{aval.status}</Badge>
+          {!editing && (
+            <Button size="sm" variant="outline" onClick={gerarPDF} className="gap-2">
+              <FileDown className="h-4 w-4" /> PDF
+            </Button>
+          )}
           {podeEditar && !editing && (
             <Button size="sm" variant="outline" onClick={() => { setDraft(aval); setEditing(true); }}>
               <Pencil className="h-4 w-4 mr-2" /> Editar

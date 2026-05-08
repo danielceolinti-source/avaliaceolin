@@ -174,6 +174,29 @@ export default function Dashboard() {
         <Kpi icon={Car} label="Comprados" value={fmt(comprados)} hint={`${data.length ? Math.round((comprados / data.length) * 100) : 0}% do total`} accent="bg-success" />
       </div>
 
+      {empresaFiltro === "Todas" && (
+        <div className="grid md:grid-cols-2 gap-4">
+          <Card className="border-l-4 border-[#CE2B37] bg-slate-50/30">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-widest">Ceolin Automóveis</p>
+                <h3 className="text-2xl font-bold mt-1 text-[#CE2B37]">{data.filter(a => a.empresa === 'Ceolin').length} <span className="text-sm font-normal text-muted-foreground">avaliações</span></h3>
+              </div>
+              <Badge variant="outline" className="bg-white border-[#009246] text-[#009246]">FIAT</Badge>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-[#231F20] bg-slate-50/30">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-widest">Viva Automóveis</p>
+                <h3 className="text-2xl font-bold mt-1 text-[#808285]">{data.filter(a => a.empresa === 'Viva').length} <span className="text-sm font-normal text-muted-foreground">avaliações</span></h3>
+              </div>
+              <Badge variant="outline" className="bg-white border-[#808285] text-[#808285]">JEEP / RAM</Badge>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Card>
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <div>
