@@ -78,7 +78,6 @@ export default function NovaAvaliacao() {
   const [tagsObs, setTagsObs] = useState<string[]>([]);
   const [scanning, setScanning] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [avariasPecas, setAvariasPecas] = useState<string[]>([]);
   const [fipeOpen, setFipeOpen] = useState(false);
 
   const toggle = (arr: string[], setArr: (v: string[]) => void, v: string) =>
@@ -130,7 +129,7 @@ export default function NovaAvaliacao() {
       fipe: fipe || null, custo: custo || null, avaliacao: aval || null,
       vendedor, origem: (origem as any) || null, status,
       estado_geral: estado || null, nivel_avarias: nivel || null,
-      historico, opcionais, avarias: avariasPecas.map((p) => ({ peca: p })),
+      historico, opcionais,
       tags_obs: tagsObs, observacoes: obs || null,
       created_by: user.id, updated_by: user.id,
     });
@@ -302,16 +301,6 @@ export default function NovaAvaliacao() {
       </div>
 
       <Card>
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm flex items-center gap-2"><Car className="h-4 w-4" /> Diagrama de avarias</CardTitle>
-          <Badge variant="outline">Toque nas peças</Badge>
-        </CardHeader>
-        <CardContent>
-          <CarDiagram value={avariasPecas} onChange={setAvariasPecas} />
-        </CardContent>
-      </Card>
-
-      <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><ImagePlus className="h-4 w-4" /> Fotos & anexos</CardTitle></CardHeader>
         <CardContent>
           <div className="text-xs text-muted-foreground">Upload de fotos será habilitado após salvar a avaliação.</div>
@@ -330,58 +319,6 @@ export default function NovaAvaliacao() {
           <Textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={4} placeholder="Notas livres do avaliador…" />
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-function CarDiagram({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
-  const parts = [
-    { id: "capo", label: "Capô", x: 35, y: 18, w: 30, h: 18 },
-    { id: "teto", label: "Teto", x: 35, y: 38, w: 30, h: 22 },
-    { id: "tampa-tras", label: "Tampa traseira", x: 35, y: 62, w: 30, h: 16 },
-    { id: "para-front", label: "Para-choque dianteiro", x: 32, y: 8, w: 36, h: 8 },
-    { id: "para-tras", label: "Para-choque traseiro", x: 32, y: 80, w: 36, h: 8 },
-    { id: "porta-de", label: "Porta DE", x: 18, y: 38, w: 15, h: 22 },
-    { id: "porta-dd", label: "Porta DD", x: 67, y: 38, w: 15, h: 22 },
-    { id: "paralama-de", label: "Paralama DE", x: 18, y: 18, w: 15, h: 18 },
-    { id: "paralama-dd", label: "Paralama DD", x: 67, y: 18, w: 15, h: 18 },
-    { id: "lateral-te", label: "Lateral TE", x: 18, y: 62, w: 15, h: 16 },
-    { id: "lateral-td", label: "Lateral TD", x: 67, y: 62, w: 15, h: 16 },
-  ];
-  const toggle = (id: string) => onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id]);
-
-  return (
-    <div className="grid md:grid-cols-[1fr_240px] gap-5 items-start">
-      <div className="relative aspect-[3/5] max-w-[300px] mx-auto bg-muted/30 rounded-2xl border-2 border-border overflow-hidden">
-        {parts.map((p) => {
-          const active = value.includes(p.id);
-          return (
-            <button key={p.id} onClick={() => toggle(p.id)} title={p.label}
-              className={cn("absolute rounded-md transition-all border-2",
-                active ? "bg-destructive/70 border-destructive" : "bg-card/90 border-border hover:border-primary")}
-              style={{ left: `${p.x}%`, top: `${p.y}%`, width: `${p.w}%`, height: `${p.h}%` }}
-            />
-          );
-        })}
-      </div>
-      <div>
-        <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Peças marcadas</div>
-        {value.length === 0 ? (
-          <div className="text-sm text-muted-foreground italic">Nenhuma avaria marcada</div>
-        ) : (
-          <div className="space-y-1.5">
-            {value.map((id) => {
-              const p = parts.find((x) => x.id === id)!;
-              return (
-                <div key={id} className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm">
-                  <span>{p.label}</span>
-                  <button className="text-xs text-destructive" onClick={() => toggle(id)}>Remover</button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
     </div>
   );
 }

@@ -275,14 +275,6 @@ export default function AvaliacaoDetalhe() {
                 <div className="flex flex-wrap gap-1.5">
                   {(aval.opcionais || []).map((o: string) => <Badge key={o} variant="outline">{o}</Badge>)}
                 </div>
-                {(aval.avarias || []).length > 0 && (
-                  <div>
-                    <div className="text-xs uppercase text-muted-foreground mb-1.5">Avarias</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(aval.avarias || []).map((a: any, i: number) => <Badge key={i} variant="destructive">{a.peca}</Badge>)}
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>

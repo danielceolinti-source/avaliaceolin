@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useApp } from "@/store/app";
 import { Activity, CalendarDays, CalendarRange, Car, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { STATUS_COLORS, Status, MESES } from "@/data/constants";
@@ -107,6 +107,14 @@ export default function Dashboard() {
     doc.save(`dashboard-${tipo}-${new Date().toISOString().split("T")[0]}.pdf`);
     toast.success("PDF exportado");
   };
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!roleLoading && !canViewDashboards) {
+      navigate("/avaliacoes", { replace: true });
+    }
+  }, [canViewDashboards, roleLoading, navigate]);
 
   if (loading || roleLoading) return <div className="py-20 grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
 
