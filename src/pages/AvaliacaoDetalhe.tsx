@@ -229,7 +229,7 @@ export default function AvaliacaoDetalhe() {
                 <SelectContent>{ORIGENS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            {canManageUsers && (
+            {(isGestor || isTI || isSuperAdmin) && (
               <Field label="Status">
                 <Select value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>

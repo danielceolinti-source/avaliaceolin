@@ -19,8 +19,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { dataBR, moedaBR } from "@/lib/format";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR");
+const moeda = moedaBR;
 
 function Kpi({ icon: Icon, label, value, hint, accent }: any) {
   return (
@@ -117,6 +120,7 @@ export default function Dashboard() {
       </div>
     );
   }
+  return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
         <div>
