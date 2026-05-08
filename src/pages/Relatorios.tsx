@@ -13,6 +13,7 @@ import { MESES, STATUS, STATUS_COLORS, Status } from "@/data/constants";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, Legend } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { toast } from "sonner";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--success))", "hsl(var(--warning))", "hsl(var(--info))", "hsl(var(--destructive))", "hsl(var(--accent))"];
 const ORIGENS = ["Showroom", "Online", "Indicação", "Frotista", "Outros"];
