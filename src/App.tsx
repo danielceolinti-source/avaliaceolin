@@ -11,6 +11,7 @@ import AvaliacaoDetalhe from "./pages/AvaliacaoDetalhe";
 import { Relatorios, Auditoria, Logs, Configuracoes } from "./pages/Stubs";
 import Usuarios from "./pages/Usuarios";
 import Comprados from "./pages/Comprados";
+import Vendedores from "./pages/Vendedores";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/comprados" element={<Comprados />} />
               <Route path="/relatorios" element={<Relatorios />} />
               <Route path="/usuarios" element={<Usuarios />} />
+              <Route path="/vendedores" element={<Vendedores />} />
               <Route path="/auditoria" element={<Auditoria />} />
               <Route path="/logs" element={<Logs />} />
               <Route path="/configuracoes" element={<Configuracoes />} />
