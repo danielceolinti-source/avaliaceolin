@@ -169,20 +169,24 @@ Deno.serve(async (req) => {
 
     try {
       const res = await firecrawlScrape(`https://placafipe.com/placa/${cleanPlaca}`);
-      debug.placafipe = { ok: !!res, len: res?.html?.length || 0 };
-      if (res?.html) {
-        parsed = parsePlacafipe(res.html);
+      debug.placafipe = { status: res?._status, keys: res?._keys, htmlLen: res?.html?.length, rawLen: res?.rawHtml?.length, mdLen: res?.markdown?.length };
+      const html = res?.html || res?.rawHtml || "";
+      if (html) {
+        parsed = parsePlacafipe(html);
         if (parsed) source = "placafipe.com";
+        debug.placafipeParsed = !!parsed;
       }
     } catch (e) { debug.placafipeError = String(e); }
 
     if (!parsed) {
       try {
         const res = await firecrawlScrape(`https://www.tabelafipebrasil.com/placa/${cleanPlaca}`);
-        debug.tabelafipe = { ok: !!res, len: res?.html?.length || 0 };
-        if (res?.html) {
-          parsed = parseTabelaFipeBrasil(res.html, res.markdown);
+        debug.tabelafipe = { status: res?._status, keys: res?._keys, htmlLen: res?.html?.length, rawLen: res?.rawHtml?.length, mdLen: res?.markdown?.length };
+        const html = res?.html || res?.rawHtml || "";
+        if (html) {
+          parsed = parseTabelaFipeBrasil(html, res?.markdown);
           if (parsed) source = "tabelafipebrasil.com";
+          debug.tabelafipeParsed = !!parsed;
         }
       } catch (e) { debug.tabelafipeError = String(e); }
     }
