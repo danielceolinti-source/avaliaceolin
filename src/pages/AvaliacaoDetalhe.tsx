@@ -24,8 +24,8 @@ export default function AvaliacaoDetalhe() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isAdmin, roles } = useRole();
-  const podeExcluir = roles.includes("super_admin") || roles.includes("ti");
+  const { canEditAssessment, canDeleteAny, isSuperAdmin, isTI, isGestor } = useRole();
+  const podeExcluir = canDeleteAny;
   const fileRef = useRef<HTMLInputElement>(null);
   const [aval, setAval] = useState<any>(null);
   const [fotos, setFotos] = useState<{ id: string; url: string; storage_path: string; descricao: string | null }[]>([]);
@@ -37,7 +37,8 @@ export default function AvaliacaoDetalhe() {
   const [fipeOpen, setFipeOpen] = useState(false);
   const { vendedores } = useVendedores(draft?.empresa);
 
-  const podeEditar = !!aval && (isAdmin || (user && aval.created_by === user.id));
+  const podeEditar = !!aval && canEditAssessment(aval.created_by);
+  const podeMudarStatus = isSuperAdmin || isTI || isGestor;
 
   const load = async () => {
     if (!id) return;
@@ -172,7 +173,7 @@ export default function AvaliacaoDetalhe() {
             {d.ano} {d.km ? `• ${Number(d.km).toLocaleString("pt-BR")} km` : ""} • Placa <span className="font-mono">{d.placa}</span>
           </p>
         </div>
-        {!editing && (
+        {podeMudarStatus && !editing && (
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => mudarStatus("Comprado")} className="border-success/40 text-success hover:bg-success/10"><ShoppingCart className="h-4 w-4 mr-2" /> Comprado</Button>
             <Button variant="outline" onClick={() => mudarStatus("Não Comprado")} className="border-destructive/40 text-destructive hover:bg-destructive/10"><X className="h-4 w-4 mr-2" /> Não Comprado</Button>
@@ -228,7 +229,7 @@ export default function AvaliacaoDetalhe() {
                 <SelectContent>{ORIGENS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            {isAdmin && (
+            {canManageUsers && (
               <Field label="Status">
                 <Select value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -291,9 +292,11 @@ export default function AvaliacaoDetalhe() {
       <Card>
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <CardTitle className="text-sm flex items-center gap-2"><ImagePlus className="h-4 w-4" /> Fotos ({fotos.length})</CardTitle>
-          <Button size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Camera className="h-4 w-4 mr-2" />} Adicionar fotos
-          </Button>
+          {podeEditar && (
+            <Button size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Camera className="h-4 w-4 mr-2" />} Adicionar fotos
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {fotos.length === 0 ? (

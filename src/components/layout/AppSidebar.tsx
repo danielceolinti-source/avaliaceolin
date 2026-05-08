@@ -7,28 +7,34 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-
-const main = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Nova Avaliação", url: "/nova", icon: PlusCircle, highlight: true },
-  { title: "Avaliações", url: "/avaliacoes", icon: ClipboardList },
-  { title: "Veículos Comprados", url: "/comprados", icon: Car },
-  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
-];
-
-const admin = [
-  { title: "Usuários", url: "/usuarios", icon: Users },
-  { title: "Vendedores", url: "/vendedores", icon: UserCog },
-  { title: "Auditoria", url: "/auditoria", icon: FileSearch },
-  { title: "Logs", url: "/logs", icon: Shield },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
-];
+import { useRole } from "@/hooks/useRole";
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
+  const { 
+    canViewDashboards, canCreateAssessment, canManageUsers, 
+    canManageVendors, canViewAudit, isSuperAdmin, isTI, isGestor 
+  } = useRole();
+
   const isActive = (p: string) => (p === "/" ? pathname === "/" : pathname.startsWith(p));
+
+  const mainItems = [
+    { title: "Dashboard", url: "/", icon: LayoutDashboard, visible: canViewDashboards },
+    { title: "Nova Avaliação", url: "/nova", icon: PlusCircle, visible: canCreateAssessment },
+    { title: "Avaliações", url: "/avaliacoes", icon: ClipboardList, visible: true },
+    { title: "Veículos Comprados", url: "/comprados", icon: Car, visible: true },
+    { title: "Relatórios", url: "/relatorios", icon: BarChart3, visible: canViewDashboards },
+  ].filter(i => i.visible);
+
+  const adminItems = [
+    { title: "Usuários", url: "/usuarios", icon: Users, visible: canManageUsers },
+    { title: "Vendedores", url: "/vendedores", icon: UserCog, visible: canManageVendors },
+    { title: "Auditoria", url: "/auditoria", icon: FileSearch, visible: canViewAudit },
+    { title: "Logs", url: "/logs", icon: Shield, visible: canViewAudit },
+    { title: "Configurações", url: "/configuracoes", icon: Settings, visible: isTI || isSuperAdmin },
+  ].filter(i => i.visible);
 
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border">
@@ -49,7 +55,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Operacional</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {main.map((item) => (
+              {mainItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <NavLink to={item.url} end={item.url === "/"}>
@@ -63,23 +69,25 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Administração</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {admin.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <NavLink to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {adminItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administração</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                      <NavLink to={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-3">

@@ -19,9 +19,46 @@ export function useRole() {
     })();
   }, [user]);
 
-  const isAdmin = roles.some((r) => ["super_admin", "ti", "gestor"].includes(r));
   const isSuperAdmin = roles.includes("super_admin");
-  const canManageRoles = roles.some((r) => ["super_admin", "ti"].includes(r));
+  const isTI = roles.includes("ti");
+  const isGestor = roles.includes("gestor");
+  const isAvaliador = roles.includes("avaliador");
 
-  return { roles, isAdmin, isSuperAdmin, canManageRoles, loading };
+  // Granular Permissions
+  const isAdmin = isSuperAdmin || isTI || isGestor;
+  const canManageRoles = isSuperAdmin || isTI;
+  const canManageUsers = isSuperAdmin || isTI;
+  const canManageVendors = isSuperAdmin || isTI;
+  const canViewDashboards = isSuperAdmin || isTI || isGestor;
+  const canViewAudit = isSuperAdmin;
+  const canDeleteAny = isSuperAdmin;
+  const canRestoreData = isSuperAdmin;
+
+  const canEditAssessment = (createdBy: string | null) => {
+    if (isSuperAdmin || isTI) return true;
+    if (isGestor) return true; // Gestor pode editar avaliações operacionais (todas)
+    if (isAvaliador && user?.id === createdBy) return true; // Avaliador edita as próprias
+    return false;
+  };
+
+  const canCreateAssessment = isAvaliador || isGestor || isTI || isSuperAdmin;
+
+  return { 
+    roles, 
+    loading,
+    isSuperAdmin,
+    isTI,
+    isGestor,
+    isAvaliador,
+    isAdmin, 
+    canManageRoles, 
+    canManageUsers,
+    canManageVendors,
+    canViewDashboards,
+    canViewAudit,
+    canDeleteAny,
+    canRestoreData,
+    canEditAssessment,
+    canCreateAssessment
+  };
 }

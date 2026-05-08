@@ -11,8 +11,11 @@ import { dataBR, moedaBR as moeda } from "@/lib/format";
 import { downloadCSV, toCSV } from "@/lib/csv";
 import { MESES, STATUS, STATUS_COLORS, Status } from "@/data/constants";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, Legend } from "recharts";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--success))", "hsl(var(--warning))", "hsl(var(--info))", "hsl(var(--destructive))", "hsl(var(--accent))"];
+const ORIGENS = ["Showroom", "Online", "Indicação", "Frotista", "Outros"];
 
 export default function Relatorios() {
   const { empresaFiltro } = useApp();
@@ -22,6 +25,8 @@ export default function Relatorios() {
   const [mes, setMes] = useState<number | "todos">("todos");
   const [statusF, setStatusF] = useState<Status | "todos">("todos");
   const [vendedor, setVendedor] = useState<string>("todos");
+  const [avaliador, setAvaliador] = useState<string>("todos");
+  const [origem, setOrigem] = useState<string>("todos");
 
   useEffect(() => {
     (async () => {
@@ -36,15 +41,18 @@ export default function Relatorios() {
     if (empresaFiltro !== "Todas" && a.empresa !== empresaFiltro) return false;
     if (statusF !== "todos" && a.status !== statusF) return false;
     if (vendedor !== "todos" && a.vendedor !== vendedor) return false;
+    if (avaliador !== "todos" && a.created_by_name !== avaliador) return false;
+    if (origem !== "todos" && a.origem !== origem) return false;
     const d = a.data_avaliacao || a.created_at;
     if (!d) return true;
     const dt = new Date(d);
     if (dt.getFullYear() !== ano) return false;
     if (mes !== "todos" && dt.getMonth() + 1 !== mes) return false;
     return true;
-  }), [rows, empresaFiltro, ano, mes, statusF, vendedor]);
+  }), [rows, empresaFiltro, ano, mes, statusF, vendedor, avaliador, origem]);
 
-  const vendedores = useMemo(() => Array.from(new Set(rows.map((r) => r.vendedor).filter(Boolean))).sort(), [rows]);
+  const listaVendedores = useMemo(() => Array.from(new Set(rows.map((r) => r.vendedor).filter(Boolean))).sort(), [rows]);
+  const listaAvaliadores = useMemo(() => Array.from(new Set(rows.map((r) => r.created_by_name).filter(Boolean))).sort(), [rows]);
 
   // KPIs
   const total = filtrado.length;
@@ -93,6 +101,76 @@ export default function Relatorios() {
     for (const a of filtrado) map[a.status] = (map[a.status] || 0) + 1;
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [filtrado]);
+
+  const exportarPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFillColor(31, 41, 55); // Slate 800
+    doc.rect(0, 0, pageWidth, 40, "F");
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text("AVALIA CEOLIN", 15, 20);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("RELATÓRIO OPERACIONAL DE AVALIAÇÕES", 15, 30);
+    
+    const periodo = mes === "todos" ? `${ano}` : `${MESES[mes-1].nome} / ${ano}`;
+    doc.text(`PERÍODO: ${periodo}`, pageWidth - 15, 20, { align: "right" });
+    doc.text(`EMPRESA: ${empresaFiltro.toUpperCase()}`, pageWidth - 15, 30, { align: "right" });
+
+    // KPIs Row
+    doc.setTextColor(31, 41, 55);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("RESUMO DO PERÍODO", 15, 55);
+    
+    autoTable(doc, {
+      startY: 60,
+      head: [["Avaliações", "Comprados", "Conversão", "Total Investido", "Economia FIPE"]],
+      body: [[
+        total.toString(),
+        comprados.length.toString(),
+        `${conversao}%`,
+        moeda(investido),
+        moeda(economia)
+      ]],
+      theme: "grid",
+      headStyles: { fillColor: [71, 85, 105], fontSize: 8 },
+      styles: { fontSize: 10, halign: "center" }
+    });
+
+    // Main Table
+    doc.setFontSize(10);
+    doc.text("DETALHAMENTO DE AVALIAÇÕES", 15, (doc as any).lastAutoTable.finalY + 15);
+
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 20,
+      head: [["Data", "Veículo", "Placa", "Vendedor", "FIPE", "Avaliação", "Status"]],
+      body: filtrado.map(a => [
+        dataBR(a.data_avaliacao || a.created_at),
+        `${a.marca} ${a.modelo}`,
+        a.placa,
+        a.vendedor || "—",
+        moeda(a.fipe),
+        moeda(a.avaliacao),
+        a.status
+      ]),
+      headStyles: { fillColor: [31, 41, 55], fontSize: 8 },
+      styles: { fontSize: 7 },
+      columnStyles: {
+        4: { halign: "right" },
+        5: { halign: "right" }
+      }
+    });
+
+    doc.save(`relatorio-ceolin-${periodo.replace(/\s/g, "")}.pdf`);
+    toast.success("PDF gerado com sucesso");
+  };
 
   const exportarCSV = () => {
     const csv = toCSV(
@@ -147,14 +225,19 @@ export default function Relatorios() {
           <h1 className="font-display text-3xl md:text-4xl font-bold">Relatórios</h1>
           <p className="text-muted-foreground text-sm mt-1">Indicadores, conversão, ticket médio e exportações.</p>
         </div>
-        <Button onClick={exportarCSV} disabled={!filtrado.length} className="bg-gradient-primary text-primary-foreground shadow-glow">
-          <Download className="h-4 w-4 mr-2" /> Exportar CSV ({filtrado.length})
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={exportarCSV} disabled={!filtrado.length}>
+            <Download className="h-4 w-4 mr-2" /> Excel
+          </Button>
+          <Button onClick={exportarPDF} disabled={!filtrado.length} className="bg-gradient-primary text-primary-foreground shadow-glow">
+            <Download className="h-4 w-4 mr-2" /> Gerar PDF Profissional
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}
       <Card>
-        <CardContent className="p-3 grid grid-cols-2 md:grid-cols-5 gap-2">
+        <CardContent className="p-3 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
           <Input type="number" value={ano} onChange={(e) => setAno(Number(e.target.value) || ano)} placeholder="Ano" />
           <Select value={String(mes)} onValueChange={(v) => setMes(v === "todos" ? "todos" : Number(v))}>
             <SelectTrigger><SelectValue placeholder="Mês" /></SelectTrigger>
@@ -174,11 +257,25 @@ export default function Relatorios() {
             <SelectTrigger><SelectValue placeholder="Vendedor" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos vendedores</SelectItem>
-              {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+              {listaVendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
             </SelectContent>
           </Select>
-          <div className="flex items-center justify-end text-sm text-muted-foreground">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : `${filtrado.length} registros`}
+          <Select value={avaliador} onValueChange={setAvaliador}>
+            <SelectTrigger><SelectValue placeholder="Avaliador" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos avaliadores</SelectItem>
+              {listaAvaliadores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={origem} onValueChange={setOrigem}>
+            <SelectTrigger><SelectValue placeholder="Origem" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todas origens</SelectItem>
+              {ORIGENS.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center justify-center text-xs font-semibold bg-muted rounded-md px-2">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : `${filtrado.length} reg.`}
           </div>
         </CardContent>
       </Card>

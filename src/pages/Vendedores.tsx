@@ -14,8 +14,7 @@ import { EMPRESAS } from "@/data/constants";
 
 export default function Vendedores() {
   const { user } = useAuth();
-  const { isAdmin, roles } = useRole();
-  const podeExcluir = roles.includes("super_admin") || roles.includes("ti");
+  const { canManageVendors, canDeleteAny } = useRole();
   const { vendedores, loading, reload } = useVendedores(undefined, false);
   const [q, setQ] = useState("");
   const [novoNome, setNovoNome] = useState("");
@@ -59,7 +58,7 @@ export default function Vendedores() {
         <p className="text-muted-foreground text-sm mt-1">{vendedores.length} cadastrados · {vendedores.filter(v=>v.ativo).length} ativos</p>
       </div>
 
-      {isAdmin && (
+      {canManageVendors && (
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm">Novo vendedor</CardTitle></CardHeader>
           <CardContent className="flex flex-col md:flex-row gap-2">
@@ -94,7 +93,7 @@ export default function Vendedores() {
                     {v.nome.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    {isAdmin ? (
+                    {canManageVendors ? (
                       <Input defaultValue={v.nome} onBlur={(e) => e.target.value !== v.nome && renomear(v.id, e.target.value)} className="h-8 border-transparent hover:border-input" />
                     ) : (
                       <div className="font-medium">{v.nome}</div>
@@ -104,10 +103,10 @@ export default function Vendedores() {
                   <Badge variant="outline" className={v.ativo ? "bg-success/10 text-success border-success/30" : "bg-muted text-muted-foreground"}>
                     {v.ativo ? "Ativo" : "Inativo"}
                   </Badge>
-                  {isAdmin && (
+                  {canManageVendors && (
                     <Button variant="ghost" size="icon" onClick={() => toggleAtivo(v.id, v.ativo)}><Power className="h-4 w-4" /></Button>
                   )}
-                  {podeExcluir && (
+                  {canDeleteAny && (
                     <Button variant="ghost" size="icon" onClick={() => excluir(v.id)} className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
                   )}
                 </div>

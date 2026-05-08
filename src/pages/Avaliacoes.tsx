@@ -16,6 +16,7 @@ import { downloadCSV, toCSV } from "@/lib/csv";
 
 export default function Avaliacoes() {
   const navigate = useNavigate();
+  const { canCreateAssessment } = useRole();
   const { empresaFiltro } = useApp();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<Status | "todos">("todos");
@@ -81,9 +82,11 @@ export default function Avaliacoes() {
             const periodo = mes === "todos" ? `${ano}` : `${MESES[mes - 1].abrev}-${ano}`;
             downloadCSV(`avaliacoes-${periodo}.csv`, csv);
           }}><Download className="h-4 w-4 mr-2" /> Exportar</Button>
-          <Button asChild className="bg-gradient-primary text-primary-foreground shadow-glow">
-            <Link to="/nova"><Plus className="h-4 w-4 mr-2" /> Nova Avaliação</Link>
-          </Button>
+          {canCreateAssessment && (
+            <Button asChild className="bg-gradient-primary text-primary-foreground shadow-glow">
+              <Link to="/nova"><Plus className="h-4 w-4 mr-2" /> Nova Avaliação</Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -153,9 +156,11 @@ export default function Avaliacoes() {
             <div className="py-16 text-center">
               <div className="font-display text-lg font-semibold">Nenhuma avaliação neste período</div>
               <p className="text-sm text-muted-foreground mt-1">Crie a primeira ou troque de mês.</p>
-              <Button asChild className="mt-4 bg-gradient-primary text-primary-foreground shadow-glow">
-                <Link to="/nova"><Plus className="h-4 w-4 mr-2" /> Nova Avaliação</Link>
-              </Button>
+              {canCreateAssessment && (
+                <Button asChild className="mt-4 bg-gradient-primary text-primary-foreground shadow-glow">
+                  <Link to="/nova"><Plus className="h-4 w-4 mr-2" /> Nova Avaliação</Link>
+                </Button>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
