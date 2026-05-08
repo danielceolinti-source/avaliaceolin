@@ -19,8 +19,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { dataBR, moedaBR } from "@/lib/format";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR");
+const moeda = moedaBR;
 
 function Kpi({ icon: Icon, label, value, hint, accent }: any) {
   return (
