@@ -14,15 +14,15 @@ import {
 } from "lucide-react";
 import {
   EMPRESAS, ESTADO_GERAL, HISTORICO_OPCOES, NIVEL_AVARIAS,
-  OPCIONAIS, ORIGENS, VENDEDORES, Empresa, MODALIDADES, TAGS_OBS,
+  OPCIONAIS, ORIGENS, Empresa, MODALIDADES, TAGS_OBS,
 } from "@/data/constants";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useVendedores } from "@/hooks/useVendedores";
+import { hojeBR, moedaBR as moeda } from "@/lib/format";
 import FipePicker from "@/components/FipePicker";
-
-const moeda = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 function Chip({ active, onClick, children, tone = "default" }: any) {
   const tones: Record<string, string> = {
@@ -55,7 +55,8 @@ export default function NovaAvaliacao() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [empresa, setEmpresa] = useState<Empresa>("Ceolin");
-  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
+  const { vendedores } = useVendedores(empresa);
+  const [data, setData] = useState(hojeBR());
   const [cliente, setCliente] = useState("");
   const [placa, setPlaca] = useState("");
   const [chassi, setChassi] = useState("");
@@ -95,17 +96,8 @@ export default function NovaAvaliacao() {
       if (error) throw error;
       if (data?.placa) {
         setPlaca(data.placa);
-        if (data.vehicle) {
-          if (data.vehicle.marca) setMarca(data.vehicle.marca);
-          if (data.vehicle.modelo) setModelo([data.vehicle.modelo, data.vehicle.versao].filter(Boolean).join(" ").trim());
-          if (data.vehicle.ano) setAno(data.vehicle.ano);
-          toast.success("Veículo identificado", { description: `${data.placa} • ${data.vehicle.marca} ${data.vehicle.modelo}` });
-          // sugere abrir FIPE encadeado para travar valor
-          setFipeOpen(true);
-        } else {
-          toast.success("Placa identificada", { description: data.placa });
-          setFipeOpen(true);
-        }
+        toast.success("Placa identificada", { description: `${data.placa} — selecione o veículo na FIPE` });
+        setFipeOpen(true);
       } else {
         toast.warning(data?.message || "Não consegui ler a placa");
       }
@@ -116,6 +108,7 @@ export default function NovaAvaliacao() {
       e.target.value = "";
     }
   };
+
 
   const onResolveFipe = (d: { marca: string; modelo: string; versao?: string; ano: string; fipe: number }) => {
     if (d.marca && !marca) setMarca(d.marca);
@@ -158,7 +151,7 @@ export default function NovaAvaliacao() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-bold">Nova Avaliação</h1>
-          <p className="text-muted-foreground text-sm mt-1">Foto da placa preenche placa, marca, modelo, ano, cor e combustível automaticamente.</p>
+          <p className="text-muted-foreground text-sm mt-1">Digite ou fotografe a placa. Selecione o veículo na FIPE para preencher automaticamente.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => salvar("Em Avaliação")} disabled={saving}>
@@ -173,7 +166,7 @@ export default function NovaAvaliacao() {
       <Card className="overflow-hidden border-primary/20">
         <div className="bg-gradient-hero text-white p-5 md:p-6">
           <div className="flex items-center gap-2 text-xs uppercase tracking-widest opacity-80">
-            <Sparkles className="h-3 w-3" /> Identificação automática · SimplesAPI + FIPE.Online
+            <Sparkles className="h-3 w-3" /> Placa via OCR · Veículo via FIPE.Online
           </div>
           <div className="mt-2 grid md:grid-cols-[1fr_auto] gap-4 items-end">
             <div>
@@ -194,7 +187,7 @@ export default function NovaAvaliacao() {
               </Button>
             </div>
           </div>
-          <p className="mt-3 text-xs text-white/60">Foto: SimplesAPI extrai placa + dados do veículo. FIPE: seleção encadeada marca → modelo → ano.</p>
+          <p className="mt-3 text-xs text-white/60">A foto identifica apenas a placa. Os dados do veículo (marca, modelo, ano, FIPE) são selecionados manualmente via FIPE.Online.</p>
         </div>
 
         <CardContent className="p-5 md:p-6 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -264,7 +257,7 @@ export default function NovaAvaliacao() {
           <CardContent>
             <Select value={vendedor} onValueChange={setVendedor}>
               <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>{VENDEDORES[empresa].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+              <SelectContent>{vendedores.map((v) => <SelectItem key={v.id} value={v.nome}>{v.nome}</SelectItem>)}</SelectContent>
             </Select>
           </CardContent>
         </Card>

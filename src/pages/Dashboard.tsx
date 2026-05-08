@@ -8,8 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { STATUS_COLORS, Status } from "@/data/constants";
 
+import { dataBR, moedaBR as moeda } from "@/lib/format";
+
 const fmt = (n: number) => n.toLocaleString("pt-BR");
-const moeda = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 function Kpi({ icon: Icon, label, value, hint, accent }: any) {
   return (
@@ -33,11 +34,17 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
+    const load = async () => {
       const { data } = await supabase.from("avaliacoes").select("*").order("created_at", { ascending: false });
       setRows(data || []);
       setLoading(false);
-    })();
+    };
+    load();
+    // realtime: atualização automática das últimas avaliações
+    const ch = supabase.channel("avaliacoes-dash")
+      .on("postgres_changes", { event: "*", schema: "public", table: "avaliacoes" }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, []);
 
   const data = useMemo(() => rows.filter((a) => empresaFiltro === "Todas" || a.empresa === empresaFiltro), [rows, empresaFiltro]);
@@ -73,7 +80,10 @@ export default function Dashboard() {
 
       <Card>
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Avaliações recentes</CardTitle>
+          <div>
+            <CardTitle className="text-base">Últimas avaliações</CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">Top 10 · atualização em tempo real · UTC-3</p>
+          </div>
           <Button asChild variant="ghost" size="sm"><Link to="/avaliacoes">Ver todas →</Link></Button>
         </CardHeader>
         <CardContent className="p-0">
@@ -93,23 +103,31 @@ export default function Dashboard() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <th className="text-left px-4 py-2">Veículo</th>
-                    <th className="text-left px-4 py-2">Placa</th>
-                    <th className="text-left px-4 py-2 hidden md:table-cell">Empresa</th>
-                    <th className="text-left px-4 py-2 hidden md:table-cell">Vendedor</th>
-                    <th className="text-right px-4 py-2">Avaliação</th>
-                    <th className="text-left px-4 py-2">Status</th>
+                    <th className="text-left px-3 py-2">Data</th>
+                    <th className="text-left px-3 py-2">Veículo</th>
+                    <th className="text-left px-3 py-2">Placa</th>
+                    <th className="text-left px-3 py-2 hidden md:table-cell">Vendedor</th>
+                    <th className="text-left px-3 py-2 hidden lg:table-cell">Cliente</th>
+                    <th className="text-left px-3 py-2 hidden lg:table-cell">Origem</th>
+                    <th className="text-left px-3 py-2 hidden md:table-cell">Empresa</th>
+                    <th className="text-right px-3 py-2 hidden md:table-cell">FIPE</th>
+                    <th className="text-right px-3 py-2">Avaliação</th>
+                    <th className="text-left px-3 py-2">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.slice(0, 8).map((a) => (
-                    <tr key={a.id} className="border-t hover:bg-muted/30">
-                      <td className="px-4 py-3"><div className="font-medium">{a.marca} {a.modelo}</div><div className="text-xs text-muted-foreground">{a.ano}</div></td>
-                      <td className="px-4 py-3 font-mono text-xs">{a.placa}</td>
-                      <td className="px-4 py-3 hidden md:table-cell">{a.empresa}</td>
-                      <td className="px-4 py-3 hidden md:table-cell">{a.vendedor}</td>
-                      <td className="px-4 py-3 text-right font-mono">{moeda(a.avaliacao || 0)}</td>
-                      <td className="px-4 py-3"><Badge variant="outline" className={STATUS_COLORS[a.status as Status]}>{a.status}</Badge></td>
+                  {data.slice(0, 10).map((a) => (
+                    <tr key={a.id} className="border-t hover:bg-muted/30 cursor-pointer" onClick={() => window.location.assign(`/avaliacoes/${a.id}`)}>
+                      <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{dataBR(a.data_avaliacao || a.created_at)}</td>
+                      <td className="px-3 py-2.5"><div className="font-medium truncate max-w-[180px]">{a.marca} {a.modelo}</div><div className="text-xs text-muted-foreground">{a.ano}</div></td>
+                      <td className="px-3 py-2.5 font-mono text-xs">{a.placa}</td>
+                      <td className="px-3 py-2.5 hidden md:table-cell">{a.vendedor || "—"}</td>
+                      <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground">{a.cliente || "—"}</td>
+                      <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground">{a.origem || "—"}</td>
+                      <td className="px-3 py-2.5 hidden md:table-cell text-xs">{a.empresa}</td>
+                      <td className="px-3 py-2.5 text-right font-mono hidden md:table-cell text-muted-foreground">{moeda(a.fipe || 0)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-semibold">{moeda(a.avaliacao || 0)}</td>
+                      <td className="px-3 py-2.5"><Badge variant="outline" className={STATUS_COLORS[a.status as Status]}>{a.status}</Badge></td>
                     </tr>
                   ))}
                 </tbody>

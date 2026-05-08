@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, ClipboardList, PlusCircle, Car, BarChart3,
-  Users, Shield, Settings, FileSearch,
+  Users, Shield, Settings, FileSearch, UserCog,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -18,6 +18,7 @@ const main = [
 
 const admin = [
   { title: "Usuários", url: "/usuarios", icon: Users },
+  { title: "Vendedores", url: "/vendedores", icon: UserCog },
   { title: "Auditoria", url: "/auditoria", icon: FileSearch },
   { title: "Logs", url: "/logs", icon: Shield },
   { title: "Configurações", url: "/configuracoes", icon: Settings },

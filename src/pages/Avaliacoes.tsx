@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-const moeda = (n: number | null) => (n ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+import { dataBR, moedaBR as moeda } from "@/lib/format";
 
 export default function Avaliacoes() {
   const navigate = useNavigate();
@@ -169,7 +169,7 @@ export default function Avaliacoes() {
                     const d = a.data_avaliacao || a.created_at;
                     return (
                       <tr key={a.id} onClick={() => navigate(`/avaliacoes/${a.id}`)} className="border-t hover:bg-muted/30 cursor-pointer">
-                        <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">{d ? new Date(d).toLocaleDateString("pt-BR") : "—"}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">{dataBR(d)}</td>
                         <td className="px-4 py-3 whitespace-nowrap">{a.vendedor || "—"}</td>
                         <td className="px-4 py-3 hidden md:table-cell">{a.cliente || "—"}</td>
                         <td className="px-4 py-3">
