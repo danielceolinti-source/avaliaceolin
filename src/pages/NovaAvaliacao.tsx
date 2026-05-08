@@ -266,8 +266,13 @@ export default function NovaAvaliacao() {
     if (!placa.trim()) return toast.warning("Placa é obrigatória");
     setSaving(true);
     const { error } = await supabase.from("avaliacoes").insert({
-      empresa, placa: placa.toUpperCase(), chassi: chassi || null,
-      cliente: cliente || null, modalidade, data_avaliacao: data,
+      empresa, 
+      placa: placa.toUpperCase(), 
+      chassi: chassi || null,
+      cliente: cliente || null, 
+      modalidade, 
+      // Garante que a data enviada seja interpretada no fuso correto (Brasília)
+      data_avaliacao: `${data}T12:00:00-03:00`,
       marca, modelo, ano, km: km ? Number(km) : null,
       fipe: fipe || null, custo: custo || null, avaliacao: aval || null,
       vendedor, origem: (origem as any) || null, status,

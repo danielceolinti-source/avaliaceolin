@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { dataBR, moedaBR } from "@/lib/format";
+import { dataBR, hojeBR, moedaBR } from "@/lib/format";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 const moeda = moedaBR;
@@ -63,13 +63,25 @@ export default function Dashboard() {
 
   const data = useMemo(() => rows.filter((a) => empresaFiltro === "Todas" || a.empresa === empresaFiltro), [rows, empresaFiltro]);
 
-  const startDay = new Date(); startDay.setHours(0, 0, 0, 0);
+  const hojeString = hojeBR();
   const startWeek = new Date(); startWeek.setDate(startWeek.getDate() - 7);
-  const startMonth = new Date(); startMonth.setDate(1); startMonth.setHours(0, 0, 0, 0);
+  const startMonthString = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).slice(0, 7) + "-01";
 
-  const hoje = data.filter((d) => new Date(d.created_at) >= startDay).length;
-  const semana = data.filter((d) => new Date(d.created_at) >= startWeek).length;
-  const mes = data.filter((d) => new Date(d.created_at) >= startMonth).length;
+  const hoje = data.filter((d) => {
+    const itemDate = new Date(d.created_at || d.data_avaliacao).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+    return itemDate === hojeString;
+  }).length;
+
+  const semana = data.filter((d) => {
+    const itemDate = new Date(d.created_at || d.data_avaliacao);
+    return itemDate >= startWeek;
+  }).length;
+
+  const mes = data.filter((d) => {
+    const itemDate = new Date(d.created_at || d.data_avaliacao).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+    return itemDate.startsWith(startMonthString.slice(0, 7));
+  }).length;
+  
   const comprados = data.filter((d) => d.status === "Comprado").length;
 
   const exportarPDF = (tipo: "hoje" | "mes") => {

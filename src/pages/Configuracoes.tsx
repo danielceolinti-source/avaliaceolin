@@ -148,9 +148,11 @@ export default function Configuracoes() {
     if (!file) return;
 
     try {
-      // Tenta garantir que o bucket existe (pode falhar se não for admin, mas a migração SQL cobre isso)
+      // Tenta garantir que o bucket existe
       try {
         await supabase.storage.createBucket("logos", { public: true });
+        // Pequena pausa para o servidor processar a criação
+        await new Promise(r => setTimeout(r, 1000));
       } catch (e) { /* ignore if already exists */ }
 
       const ext = file.name.split(".").pop();
@@ -161,8 +163,8 @@ export default function Configuracoes() {
         .upload(path, file, { upsert: true });
 
       if (upErr) {
-        if (upErr.message.includes("not found")) {
-           throw new Error("A pasta de logos ainda está sendo criada no servidor. Por favor, aguarde 30 segundos e tente novamente.");
+        if (upErr.message.includes("not found") || upErr.message.includes("does not exist")) {
+           throw new Error("A pasta 'logos' ainda não foi ativada. Se este erro persistir por mais de 1 minuto, crie um bucket chamado 'logos' manualmente no seu painel Supabase (Storage).");
         }
         throw upErr;
       }
