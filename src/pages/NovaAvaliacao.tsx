@@ -55,7 +55,8 @@ export default function NovaAvaliacao() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [empresa, setEmpresa] = useState<Empresa>("Ceolin");
-  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
+  const { vendedores } = useVendedores(empresa);
+  const [data, setData] = useState(hojeBR());
   const [cliente, setCliente] = useState("");
   const [placa, setPlaca] = useState("");
   const [chassi, setChassi] = useState("");
@@ -95,17 +96,8 @@ export default function NovaAvaliacao() {
       if (error) throw error;
       if (data?.placa) {
         setPlaca(data.placa);
-        if (data.vehicle) {
-          if (data.vehicle.marca) setMarca(data.vehicle.marca);
-          if (data.vehicle.modelo) setModelo([data.vehicle.modelo, data.vehicle.versao].filter(Boolean).join(" ").trim());
-          if (data.vehicle.ano) setAno(data.vehicle.ano);
-          toast.success("Veículo identificado", { description: `${data.placa} • ${data.vehicle.marca} ${data.vehicle.modelo}` });
-          // sugere abrir FIPE encadeado para travar valor
-          setFipeOpen(true);
-        } else {
-          toast.success("Placa identificada", { description: data.placa });
-          setFipeOpen(true);
-        }
+        toast.success("Placa identificada", { description: `${data.placa} — selecione o veículo na FIPE` });
+        setFipeOpen(true);
       } else {
         toast.warning(data?.message || "Não consegui ler a placa");
       }
@@ -116,6 +108,7 @@ export default function NovaAvaliacao() {
       e.target.value = "";
     }
   };
+
 
   const onResolveFipe = (d: { marca: string; modelo: string; versao?: string; ano: string; fipe: number }) => {
     if (d.marca && !marca) setMarca(d.marca);
