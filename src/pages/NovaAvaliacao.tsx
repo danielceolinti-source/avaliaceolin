@@ -43,49 +43,40 @@ function Chip({ active, onClick, children, tone = "default" }: any) {
 const ESTADO_TONE: Record<string, string> = { Excelente: "success", "Muito Bom": "success", Bom: "info", Regular: "warn", Ruim: "danger" };
 const AVARIA_TONE: Record<string, string> = { "Sem avarias": "success", Leve: "info", Moderado: "warn", Alto: "danger", Grave: "danger" };
 
-const processImage = async (file: File): Promise<{ b64: string; info: any }> => {
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error("Tempo esgotado ao processar imagem.")), 8000);
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        clearTimeout(timeout);
-        const canvas = document.createElement("canvas");
-        let width = img.width;
-        let height = img.height;
-        const MAX = 1200;
+// Processa imagem respeitando orientação EXIF (crítico no Android, onde a foto vem rotacionada).
+// Gera 2 qualidades (alta + média) para fallback automático em caso de OCR vazio.
+const processImage = async (file: File, quality = 0.85, max = 1600): Promise<{ b64: string }> => {
+  // createImageBitmap com imageOrientation: 'from-image' aplica EXIF automaticamente
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: "from-image" } as any);
+  } catch {
+    // Fallback para browsers antigos
+    bitmap = await createImageBitmap(file);
+  }
 
-        if (width > height && width > MAX) {
-          height *= MAX / width;
-          width = MAX;
-        } else if (height > MAX) {
-          width *= MAX / height;
-          height = MAX;
-        }
+  let width = bitmap.width;
+  let height = bitmap.height;
+  if (width > height && width > max) {
+    height = Math.round((height * max) / width);
+    width = max;
+  } else if (height > max) {
+    width = Math.round((width * max) / height);
+    height = max;
+  }
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx?.drawImage(img, 0, 0, width, height);
-        
-        const b64 = canvas.toDataURL("image/jpeg", 0.7);
-        resolve({ b64, info: { originalSize: file.size, newSize: b64.length } });
-      };
-      img.onerror = () => {
-        clearTimeout(timeout);
-        reject(new Error("Falha ao processar imagem."));
-      };
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = () => {
-      clearTimeout(timeout);
-      reject(new Error("Falha ao ler arquivo."));
-    };
-    reader.readAsDataURL(file);
-  });
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas indisponível.");
+  ctx.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close?.();
+  const b64 = canvas.toDataURL("image/jpeg", quality);
+  return { b64 };
 };
+
+const PLACA_REGEX = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/;
 
 export default function NovaAvaliacao() {
   const { user } = useAuth();
