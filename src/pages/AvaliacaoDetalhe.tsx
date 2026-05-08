@@ -101,20 +101,23 @@ export default function AvaliacaoDetalhe() {
   const mudarStatus = async (status: Status) => {
     if (!id || !user) return;
     
-    // Virtual Status: Se o banco não aceita 'Avaliado', usamos 'Em Avaliação' tecnicamente
-    // mas mantemos a experiência visual para o usuário.
-    const dbStatus = status === "Avaliado" ? "Em Avaliação" : status;
+    // Virtual Status Persistence: Usamos tags para lembrar do status 'Avaliado'
+    const isVirtual = status === "Avaliado";
+    const dbStatus = isVirtual ? "Em Avaliação" : status;
+    const newTags = isVirtual 
+      ? Array.from(new Set([...(aval.tags_obs || []), "VIRTUAL_STATUS_AVALIADO"]))
+      : (aval.tags_obs || []).filter(t => t !== "VIRTUAL_STATUS_AVALIADO");
     
     const { error } = await supabase.from("avaliacoes").update({ 
       status: dbStatus, 
+      tags_obs: newTags,
       updated_by: user.id 
     }).eq("id", id);
     
     if (error) return toast.error(error.message);
     
     toast.success(`Status: ${status}`);
-    // No estado local, usamos o status que o usuário escolheu (Experiência Virtual)
-    setAval({ ...aval, status });
+    setAval({ ...aval, status, tags_obs: newTags });
   };
 
   const salvarEdicao = async () => {

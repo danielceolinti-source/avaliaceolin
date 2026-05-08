@@ -51,7 +51,13 @@ export default function Avaliacoes() {
 
   const data = useMemo(() => rows.filter((a) => {
     if (empresaFiltro !== "Todas" && a.empresa !== empresaFiltro) return false;
-    if (status !== "todos" && a.status !== status) return false;
+    
+    // Filtro inteligente para status virtual
+    const isVirtual = a.tags_obs?.includes("VIRTUAL_STATUS_AVALIADO");
+    const currentStatus = isVirtual ? "Avaliado" : a.status;
+    
+    if (status !== "todos" && currentStatus !== status) return false;
+    
     const d = a.data_avaliacao || a.created_at;
     if (d) {
       const dt = new Date(d);
@@ -65,11 +71,24 @@ export default function Avaliacoes() {
     return true;
   }), [rows, empresaFiltro, q, status, ano, mes]);
 
+  const hojeCount = useMemo(() => {
+    const hojeString = hojeBR();
+    return rows.filter(a => {
+      const d = a.data_avaliacao || a.created_at;
+      return d && new Date(d).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }) === hojeString;
+    }).length;
+  }, [rows]);
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-bold">Avaliações</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-3xl font-bold">Avaliações</h1>
+            <Badge className="bg-info text-info-foreground border-none px-2 py-0.5 rounded-full text-[10px] font-bold">
+              {hojeCount} HOJE
+            </Badge>
+          </div>
           <p className="text-muted-foreground text-sm mt-1">{data.length} resultados em {mes === "todos" ? ano : `${MESES[mes - 1].nome}/${ano}`}</p>
         </div>
         <div className="flex gap-2">
@@ -199,7 +218,11 @@ export default function Avaliacoes() {
                         <td className="px-4 py-3 hidden lg:table-cell">
                           {a.modalidade && <Badge variant="outline" className={a.modalidade === "PRESENCIAL" ? "bg-success/10 text-success border-success/30" : "bg-info/10 text-info border-info/30"}>{a.modalidade}</Badge>}
                         </td>
-                        <td className="px-4 py-3"><Badge variant="outline" className={STATUS_COLORS[a.status as Status]}>{a.status}</Badge></td>
+                        <td className="px-4 py-3">
+                          <Badge variant="outline" className={a.tags_obs?.includes("VIRTUAL_STATUS_AVALIADO") ? "bg-info/10 text-info border-info/30" : STATUS_COLORS[a.status as Status]}>
+                            {a.tags_obs?.includes("VIRTUAL_STATUS_AVALIADO") ? "Avaliado" : a.status}
+                          </Badge>
+                        </td>
                       </tr>
                     );
                   })}
