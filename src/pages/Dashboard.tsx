@@ -42,7 +42,7 @@ function Kpi({ icon: Icon, label, value, hint, accent }: any) {
 }
 
 export default function Dashboard() {
-  const { canViewDashboards, canCreateAssessment, loading: roleLoading } = useRole();
+  const { canViewStrategic, canCreateAssessment, loading: roleLoading } = useRole();
   const { empresaFiltro } = useApp();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,14 +123,14 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!roleLoading && !canViewDashboards) {
+    if (!roleLoading && !canViewStrategic) {
       navigate("/avaliacoes", { replace: true });
     }
-  }, [canViewDashboards, roleLoading, navigate]);
+  }, [canViewStrategic, roleLoading, navigate]);
 
   if (loading || roleLoading) return <div className="py-20 grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
 
-  if (!canViewDashboards) {
+  if (!canViewStrategic) {
     return (
       <div className="py-20 text-center space-y-4">
         <Lock className="h-12 w-12 text-muted-foreground mx-auto" />

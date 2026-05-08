@@ -51,7 +51,9 @@ export function useRole() {
   const canManageRoles = isSuperAdmin || isTI;
   const canManageUsers = isSuperAdmin || isTI;
   const canManageVendors = isSuperAdmin || isTI;
-  const canViewDashboards = isSuperAdmin || isTI || isGestor;
+  const canViewDashboards = (isSuperAdmin || isTI || isGestor) && !isAvaliador;
+  // Fallback para garantir que o dono/admin inicial não fique de fora se a tabela de roles estiver vazia
+  const canViewStrategic = canViewDashboards || (roles.length === 0);
   const canViewAudit = isSuperAdmin;
   const canDeleteAny = isSuperAdmin;
   const canRestoreData = isSuperAdmin;

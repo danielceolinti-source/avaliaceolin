@@ -14,18 +14,18 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const { 
-    canViewDashboards, canCreateAssessment, canManageUsers, 
+    canViewStrategic, canCreateAssessment, canManageUsers, 
     canManageVendors, canViewAudit, isSuperAdmin, isTI, isGestor 
   } = useRole();
 
   const isActive = (p: string) => (p === "/" ? pathname === "/" : pathname.startsWith(p));
 
   const mainItems = [
-    { title: "Dashboard", url: "/", icon: LayoutDashboard, visible: canViewDashboards },
+    { title: "Dashboard", url: "/", icon: LayoutDashboard, visible: canViewStrategic },
     { title: "Nova Avaliação", url: "/nova", icon: PlusCircle, visible: canCreateAssessment },
     { title: "Avaliações", url: "/avaliacoes", icon: ClipboardList, visible: true },
     { title: "Veículos Comprados", url: "/comprados", icon: Car, visible: true },
-    { title: "Relatórios", url: "/relatorios", icon: BarChart3, visible: canViewDashboards },
+    { title: "Relatórios", url: "/relatorios", icon: BarChart3, visible: canViewStrategic },
   ].filter(i => i.visible);
 
   const adminItems = [
