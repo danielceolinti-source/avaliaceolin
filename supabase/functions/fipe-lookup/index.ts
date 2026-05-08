@@ -30,7 +30,7 @@ async function firecrawlScrape(url: string): Promise<{ html?: string; markdown?:
   const r = await fetch("https://api.firecrawl.dev/v2/scrape", {
     method: "POST",
     headers: { Authorization: `Bearer ${FIRECRAWL_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ url, formats: ["html", "rawHtml", "markdown"], onlyMainContent: false, waitFor: 2000 }),
+    body: JSON.stringify({ url, formats: ["html", "rawHtml", "markdown"], onlyMainContent: false, waitFor: 3000, proxy: "stealth" }),
   });
   const data = await r.json().catch(() => null);
   if (!r.ok || !data) {
