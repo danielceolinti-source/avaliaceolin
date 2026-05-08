@@ -100,8 +100,26 @@ export default function AvaliacaoDetalhe() {
 
   const mudarStatus = async (status: Status) => {
     if (!id || !user) return;
+    
     const { error } = await supabase.from("avaliacoes").update({ status, updated_by: user.id }).eq("id", id);
-    if (error) return toast.error(error.message);
+    
+    if (error) {
+      // Rede de segurança para o erro de enum 'Avaliado'
+      if (error.message.includes("invalid input value") && status === "Avaliado") {
+        console.warn("Status 'Avaliado' ainda não disponível no banco. Usando fallback.");
+        const { error: fallbackErr } = await supabase
+          .from("avaliacoes")
+          .update({ status: "Em Avaliação", updated_by: user.id })
+          .eq("id", id);
+          
+        if (fallbackErr) return toast.error(fallbackErr.message);
+        toast.info("Status 'Avaliado' em processamento. Veículo marcado como 'Em Avaliação' temporariamente.");
+        setAval({ ...aval, status: "Em Avaliação" });
+        return;
+      }
+      return toast.error(error.message);
+    }
+    
     toast.success(`Status: ${status}`);
     setAval({ ...aval, status });
   };

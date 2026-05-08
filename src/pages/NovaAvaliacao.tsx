@@ -121,11 +121,61 @@ export default function NovaAvaliacao() {
   const [scanning, setScanning] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fipeOpen, setFipeOpen] = useState(false);
+  const [detectedPlate, setDetectedPlate] = useState<string | null>(null);
+  const [showPasteButton, setShowPasteButton] = useState(false);
+
+  // 1. Snapshot de Segurança: Salva o estado antes da captura
+  const saveSnapshot = () => {
+    const snapshot = {
+      placa, marca, modelo, ano, km, fipe, custo, aval,
+      cliente, vendedor, origem, modalidade, chassi,
+      estado, nivel, historico, opcionais, tagsObs, obs, empresa,
+      timestamp: Date.now()
+    };
+    localStorage.setItem("nova_avaliacao_snapshot", JSON.stringify(snapshot));
+  };
+
+  // 2. Hydration: Restaura o estado ao carregar
+  useEffect(() => {
+    const saved = localStorage.getItem("nova_avaliacao_snapshot");
+    if (saved) {
+      try {
+        const snap = JSON.parse(saved);
+        if (Date.now() - snap.timestamp < 600000) { // 10 min
+          if (snap.placa) setPlaca(snap.placa);
+          if (snap.marca) setMarca(snap.marca);
+          if (snap.modelo) setModelo(snap.modelo);
+          if (snap.ano) setAno(snap.ano);
+          if (snap.km) setKm(snap.km);
+          if (snap.fipe) setFipe(snap.fipe);
+          if (snap.custo) setCusto(snap.custo);
+          if (snap.aval) setAval(snap.aval);
+          if (snap.cliente) setCliente(snap.cliente);
+          if (snap.vendedor) setVendedor(snap.vendedor);
+          if (snap.origem) setOrigem(snap.origem);
+          if (snap.modalidade) setModalidade(snap.modalidade);
+          if (snap.chassi) setChassi(snap.chassi);
+          if (snap.estado) setEstado(snap.estado);
+          if (snap.nivel) setNivel(snap.nivel);
+          if (snap.historico) setHistorico(snap.historico);
+          if (snap.opcionais) setOpcionais(snap.opcionais);
+          if (snap.tagsObs) setTagsObs(snap.tagsObs);
+          if (snap.obs) setObs(snap.obs);
+          if (snap.empresa) setEmpresa(snap.empresa);
+          toast.info("Dados restaurados do rascunho anterior.");
+        }
+      } catch (e) { console.error("Falha ao restaurar snapshot", e); }
+      localStorage.removeItem("nova_avaliacao_snapshot");
+    }
+  }, []);
 
   const toggle = (arr: string[], setArr: (v: string[]) => void, v: string) =>
     setArr(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
-  const onPickPhoto = () => fileRef.current?.click();
+  const onPickPhoto = () => {
+    saveSnapshot();
+    fileRef.current?.click();
+  };
 
   const callOcr = async (b64: string): Promise<string> => {
     const { data, error } = await withTimeout(
@@ -161,14 +211,30 @@ export default function NovaAvaliacao() {
 
       if (detected && detected.length === 7) {
         const valid = PLACA_REGEX.test(detected);
-        setPlaca(detected);
-        setScanning(false);
-
-        if (valid) {
-          toast.success(`Placa: ${detected}`, { id: toastId, description: "Agora selecione o veículo na FIPE" });
-        } else {
-          toast.warning(`Placa lida: ${detected}`, { id: toastId, description: "Confira o formato e ajuste se necessário" });
-        }
+        
+        // 3. Preenchimento Robusto com Retry Loop
+        let attempts = 0;
+        const maxAttempts = 10;
+        setDetectedPlate(detected);
+        
+        const interval = setInterval(() => {
+          attempts++;
+          const input = document.getElementById("placa-input") as HTMLInputElement;
+          if (input) {
+            input.value = detected.toUpperCase();
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+            setPlaca(detected.toUpperCase());
+            clearInterval(interval);
+            toast.success(`Placa detectada: ${detected}`, { id: toastId });
+            setShowPasteButton(false);
+          } else if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            setShowPasteButton(true);
+            setPlaca(detected.toUpperCase());
+            toast.warning("Placa lida, mas o campo não foi encontrado. Use o botão flutuante.", { id: toastId });
+          }
+        }, 200);
 
         setTimeout(() => setFipeOpen(true), 800);
       } else {
@@ -246,6 +312,7 @@ export default function NovaAvaliacao() {
             <div>
               <Label className="text-white/80">Placa</Label>
               <Input
+                id="placa-input"
                 value={placa}
                 onChange={(e) => setPlaca(e.target.value.toUpperCase())}
                 placeholder="ABC1D23"
@@ -394,6 +461,22 @@ export default function NovaAvaliacao() {
           <Textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={4} placeholder="Notas livres do avaliador…" />
         </CardContent>
       </Card>
+
+      {/* Fallback Visual: Botão Flutuante */}
+      {showPasteButton && detectedPlate && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom duration-500">
+          <Button 
+            onClick={() => {
+              setPlaca(detectedPlate);
+              setShowPasteButton(false);
+              toast.success("Placa colada com sucesso!");
+            }}
+            className="bg-[#CE2B37] text-white shadow-2xl h-14 px-8 rounded-full border-2 border-white gap-2 font-bold uppercase tracking-widest text-xs"
+          >
+            <Sparkles className="h-4 w-4" /> Colar Placa Detectada: {detectedPlate}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
