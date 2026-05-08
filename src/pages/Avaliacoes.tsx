@@ -203,23 +203,24 @@ export default function Avaliacoes() {
                   {data.map((a) => {
                     const d = a.data_avaliacao || a.created_at;
                     return (
-                      <tr key={a.id} onClick={() => navigate(`/avaliacoes/${a.id}`)} className="border-t hover:bg-muted/30 cursor-pointer">
-                        <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">{dataBR(d)}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">{a.vendedor || "—"}</td>
-                        <td className="px-4 py-3 hidden md:table-cell">{a.cliente || "—"}</td>
+                      <tr key={a.id} onClick={() => navigate(`/avaliacoes/${a.id}`)} className="group border-t hover:bg-muted/40 cursor-pointer transition-premium">
+                        <td className="px-4 py-3 whitespace-nowrap text-[11px] font-medium text-muted-foreground/80">{dataBR(d)}</td>
+                        <td className="px-4 py-3 whitespace-nowrap font-medium">{a.vendedor || "—"}</td>
+                        <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">{a.cliente || "—"}</td>
                         <td className="px-4 py-3">
-                          <div className="font-medium">{a.marca} {a.modelo}</div>
-                          <div className="text-xs text-muted-foreground">{a.ano} {a.km ? `• ${a.km.toLocaleString("pt-BR")} km` : ""}</div>
+                          <div className="font-bold group-hover:text-primary transition-colors">{a.marca} {a.modelo}</div>
+                          <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">{a.ano} {a.km ? `• ${a.km.toLocaleString("pt-BR")} km` : ""}</div>
                         </td>
-                        <td className="px-4 py-3 font-mono">{a.placa}</td>
-                        <td className="px-4 py-3 text-right font-mono hidden md:table-cell">{moeda(a.fipe)}</td>
-                        <td className="px-4 py-3 text-right font-mono hidden md:table-cell">{moeda(a.custo)}</td>
-                        <td className="px-4 py-3 text-right font-mono font-semibold">{moeda(a.avaliacao)}</td>
+                        <td className="px-4 py-3 font-mono font-bold tracking-tighter text-base">{a.placa}</td>
+                        <td className="px-4 py-3 text-right font-mono text-xs hidden md:table-cell text-muted-foreground">{moeda(a.fipe)}</td>
+                        <td className="px-4 py-3 text-right font-mono text-xs hidden md:table-cell text-muted-foreground">{moeda(a.custo)}</td>
+                        <td className="px-4 py-3 text-right font-mono font-bold text-primary">{moeda(a.avaliacao)}</td>
                         <td className="px-4 py-3 hidden lg:table-cell">
-                          {a.modalidade && <Badge variant="outline" className={a.modalidade === "PRESENCIAL" ? "bg-success/10 text-success border-success/30" : "bg-info/10 text-info border-info/30"}>{a.modalidade}</Badge>}
+                          {a.modalidade && <Badge variant="outline" className={cn("text-[10px] font-bold border-none", a.modalidade === "PRESENCIAL" ? "bg-success/10 text-success" : "bg-info/10 text-info")}>{a.modalidade}</Badge>}
                         </td>
                         <td className="px-4 py-3">
-                          <Badge variant="outline" className={a.tags_obs?.includes("VIRTUAL_STATUS_AVALIADO") ? "bg-info/10 text-info border-info/30" : STATUS_COLORS[a.status as Status]}>
+                          <Badge variant="outline" className={cn("gap-1.5 font-bold border-none shadow-sm", a.tags_obs?.includes("VIRTUAL_STATUS_AVALIADO") ? "bg-info/10 text-info" : STATUS_COLORS[a.status as Status])}>
+                            <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", a.tags_obs?.includes("VIRTUAL_STATUS_AVALIADO") ? "bg-info" : (a.status === "Finalizada" || a.status === "Comprado" ? "bg-success" : (a.status === "Cancelada" ? "bg-destructive" : "bg-warning")))} />
                             {a.tags_obs?.includes("VIRTUAL_STATUS_AVALIADO") ? "Avaliado" : a.status}
                           </Badge>
                         </td>

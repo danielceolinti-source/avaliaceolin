@@ -27,15 +27,15 @@ const moeda = moedaBR;
 
 function Kpi({ icon: Icon, label, value, hint, accent }: any) {
   return (
-    <Card className="relative overflow-hidden">
-      <div className={`absolute inset-x-0 top-0 h-1 ${accent ?? "bg-gradient-primary"}`} />
+    <Card className="relative overflow-hidden group hover:shadow-lg transition-premium border-none shadow-md">
+      <div className={`absolute inset-x-0 top-0 h-1 transition-all group-hover:h-1.5 ${accent ?? "bg-gradient-primary"}`} />
       <CardContent className="p-5">
         <div className="flex items-center justify-between">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
-          <Icon className="h-4 w-4 text-muted-foreground" />
+          <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">{label}</div>
+          <Icon className="h-4 w-4 text-muted-foreground group-hover:scale-110 transition-transform" />
         </div>
-        <div className="mt-2 font-display text-3xl font-bold">{value}</div>
-        {hint && <div className="text-xs text-muted-foreground mt-1">{hint}</div>}
+        <div className="mt-2 font-display text-3xl font-bold tracking-tight">{value}</div>
+        {hint && <div className="text-[10px] text-muted-foreground mt-1.5 font-medium opacity-80">{hint}</div>}
       </CardContent>
     </Card>
   );
@@ -188,22 +188,28 @@ export default function Dashboard() {
 
       {empresaFiltro === "Todas" && (
         <div className="grid md:grid-cols-2 gap-4">
-          <Card className="border-l-4 border-[#CE2B37] bg-slate-50/30">
-            <CardContent className="p-4 flex items-center justify-between">
+          <Card className="border-l-4 border-[#CE2B37] glass hover:shadow-md transition-premium group">
+            <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-widest">Ceolin Automóveis</p>
-                <h3 className="text-2xl font-bold mt-1 text-[#CE2B37]">{data.filter(a => a.empresa === 'Ceolin').length} <span className="text-sm font-normal text-muted-foreground">avaliações</span></h3>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest opacity-70">Ceolin Automóveis</p>
+                <h3 className="text-2xl font-bold mt-1 text-[#CE2B37] group-hover:scale-105 origin-left transition-transform">
+                  {data.filter(a => a.empresa === 'Ceolin').length} 
+                  <span className="text-sm font-medium text-muted-foreground ml-2 tracking-normal">avaliações</span>
+                </h3>
               </div>
-              <Badge variant="outline" className="bg-white border-[#009246] text-[#009246]">FIAT</Badge>
+              <Badge variant="outline" className="bg-white border-[#009246] text-[#009246] shadow-sm">FIAT</Badge>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-[#231F20] bg-slate-50/30">
-            <CardContent className="p-4 flex items-center justify-between">
+          <Card className="border-l-4 border-[#231F20] glass hover:shadow-md transition-premium group">
+            <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-widest">Viva Automóveis</p>
-                <h3 className="text-2xl font-bold mt-1 text-[#808285]">{data.filter(a => a.empresa === 'Viva').length} <span className="text-sm font-normal text-muted-foreground">avaliações</span></h3>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest opacity-70">Viva Motors</p>
+                <h3 className="text-2xl font-bold mt-1 text-[#231F20] group-hover:scale-105 origin-left transition-transform">
+                  {data.filter(a => a.empresa === 'Viva').length} 
+                  <span className="text-sm font-medium text-muted-foreground ml-2 tracking-normal">avaliações</span>
+                </h3>
               </div>
-              <Badge variant="outline" className="bg-white border-[#808285] text-[#808285]">JEEP / RAM</Badge>
+              <Badge variant="outline" className="bg-white border-slate-400 text-slate-700 shadow-sm">JEEP / RAM</Badge>
             </CardContent>
           </Card>
         </div>

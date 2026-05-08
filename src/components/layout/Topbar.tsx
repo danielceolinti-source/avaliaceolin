@@ -32,12 +32,10 @@ export function Topbar() {
     : "/logos/grupo.png";
 
   return (
-    <div className="flex flex-1 items-center gap-2 md:gap-3">
+    <div className="sticky top-0 z-40 w-full glass border-b px-4 py-2 flex items-center justify-between gap-3 shadow-sm transition-premium mb-5 -mx-4 md:-mx-6 w-[calc(100%+2rem)] md:w-[calc(100%+3rem)]">
+      <div className="flex flex-1 items-center gap-2 md:gap-3">
 
-      <div className="relative flex-1 max-w-xl hidden lg:block">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Buscar placa, chassi, vendedor, modelo…" className="pl-9 h-9 bg-muted/40 border-transparent focus-visible:bg-background" />
-      </div>
+      <div className="flex-1 lg:hidden" />
 
       <div className="flex-1 lg:hidden" />
 
