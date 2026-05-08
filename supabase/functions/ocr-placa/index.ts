@@ -54,7 +54,13 @@ Deno.serve(async (req) => {
     const dataUrl = imageBase64.startsWith("data:")
       ? imageBase64
       : `data:image/jpeg;base64,${imageBase64}`;
-    const placa = await geminiOCR(dataUrl);
+    let placa = await geminiOCR(dataUrl, "google/gemini-2.5-flash");
+    // Fallback automático para modelo mais potente se o flash não conseguir ler 7 caracteres
+    if (!placa || placa.length < 7) {
+      console.log("[ocr-placa] flash falhou (", placa, "), tentando gemini-2.5-pro...");
+      const placaPro = await geminiOCR(dataUrl, "google/gemini-2.5-pro");
+      if (placaPro && placaPro.length === 7) placa = placaPro;
+    }
     return new Response(JSON.stringify({
       placa,
       source: placa ? "gemini" : null,
