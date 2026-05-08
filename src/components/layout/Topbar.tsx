@@ -34,11 +34,11 @@ export function Topbar() {
   return (
     <div className="flex flex-1 items-center gap-2 md:gap-3">
       {/* Dynamic Logo Container */}
-      <div className="h-9 px-3 flex items-center bg-white rounded border mr-1 md:mr-2 shadow-sm">
+      <div className="h-10 px-4 flex items-center bg-white rounded border mr-2 md:mr-3 shadow-sm">
         <img 
           src={logoSrc} 
           alt={empresaFiltro} 
-          className="h-6 w-auto object-contain"
+          className="h-8 w-auto object-contain"
           onError={(e) => {
             // Fallback se a imagem não existir
             (e.target as any).src = "https://placehold.co/120x40?text=LOGO";

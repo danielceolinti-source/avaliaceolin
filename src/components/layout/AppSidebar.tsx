@@ -38,9 +38,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border">
-      <SidebarHeader className="border-b border-sidebar-border h-14 px-4 flex flex-row items-center gap-2 overflow-hidden">
-        <div className="h-8 w-auto flex items-center justify-center shrink-0">
-          <img src="/logos/ceolin_login.png" alt="Ceolin" className="h-6 w-auto object-contain" />
+      <SidebarHeader className="border-b border-sidebar-border h-16 px-4 flex flex-row items-center gap-3 overflow-hidden">
+        <div className="h-10 w-auto flex items-center justify-center shrink-0">
+          <img src="/logos/ceolin_login.png" alt="Ceolin" className="h-10 w-auto object-contain" />
         </div>
         {!collapsed && (
           <div className="leading-tight">
