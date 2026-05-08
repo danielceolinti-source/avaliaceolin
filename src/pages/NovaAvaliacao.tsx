@@ -14,15 +14,15 @@ import {
 } from "lucide-react";
 import {
   EMPRESAS, ESTADO_GERAL, HISTORICO_OPCOES, NIVEL_AVARIAS,
-  OPCIONAIS, ORIGENS, VENDEDORES, Empresa, MODALIDADES, TAGS_OBS,
+  OPCIONAIS, ORIGENS, Empresa, MODALIDADES, TAGS_OBS,
 } from "@/data/constants";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useVendedores } from "@/hooks/useVendedores";
+import { hojeBR, moedaBR as moeda } from "@/lib/format";
 import FipePicker from "@/components/FipePicker";
-
-const moeda = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 function Chip({ active, onClick, children, tone = "default" }: any) {
   const tones: Record<string, string> = {
