@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 import { dataBR, moedaBR as moeda } from "@/lib/format";
+import { downloadCSV, toCSV } from "@/lib/csv";
 
 export default function Avaliacoes() {
   const navigate = useNavigate();
@@ -70,7 +71,16 @@ export default function Avaliacoes() {
           <p className="text-muted-foreground text-sm mt-1">{data.length} resultados em {mes === "todos" ? ano : `${MESES[mes - 1].nome}/${ano}`}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline"><Download className="h-4 w-4 mr-2" /> Exportar</Button>
+          <Button variant="outline" disabled={!data.length} onClick={() => {
+            const csv = toCSV(data.map((a) => ({
+              numero: a.numero, data: dataBR(a.data_avaliacao || a.created_at), empresa: a.empresa,
+              vendedor: a.vendedor, cliente: a.cliente, modalidade: a.modalidade, placa: a.placa,
+              marca: a.marca, modelo: a.modelo, versao: a.versao, ano: a.ano, km: a.km,
+              fipe: a.fipe, custo: a.custo, avaliacao: a.avaliacao, status: a.status, observacoes: a.observacoes,
+            })));
+            const periodo = mes === "todos" ? `${ano}` : `${MESES[mes - 1].abrev}-${ano}`;
+            downloadCSV(`avaliacoes-${periodo}.csv`, csv);
+          }}><Download className="h-4 w-4 mr-2" /> Exportar</Button>
           <Button asChild className="bg-gradient-primary text-primary-foreground shadow-glow">
             <Link to="/nova"><Plus className="h-4 w-4 mr-2" /> Nova Avaliação</Link>
           </Button>

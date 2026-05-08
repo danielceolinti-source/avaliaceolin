@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, Car, TrendingDown, Wallet, Hash, Download } from "lucide-react";
+import { downloadCSV, toCSV } from "@/lib/csv";
+import { dataBR } from "@/lib/format";
 
 const moeda = (n: number | null) => (n ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
@@ -44,7 +46,14 @@ export default function Comprados() {
           <h1 className="font-display text-3xl font-bold">Veículos Comprados</h1>
           <p className="text-muted-foreground text-sm mt-1">Estoque adquirido pelo grupo</p>
         </div>
-        <Button variant="outline"><Download className="h-4 w-4 mr-2" /> Exportar</Button>
+        <Button variant="outline" disabled={!filtered.length} onClick={() => {
+          const csv = toCSV(filtered.map((a) => ({
+            numero: a.numero, data: dataBR(a.data_avaliacao || a.created_at), empresa: a.empresa,
+            vendedor: a.vendedor, placa: a.placa, marca: a.marca, modelo: a.modelo, ano: a.ano, km: a.km,
+            fipe: a.fipe, avaliacao: a.avaliacao, economia: (Number(a.fipe) || 0) - (Number(a.avaliacao) || 0),
+          })));
+          downloadCSV(`comprados-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+        }}><Download className="h-4 w-4 mr-2" /> Exportar</Button>
       </div>
 
       <div className="grid md:grid-cols-4 gap-4">
