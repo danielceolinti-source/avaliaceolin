@@ -8,6 +8,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import { useRole } from "@/hooks/useRole";
+import { cn } from "@/lib/utils";
 
 export function AppSidebar() {
   const { state } = useSidebar();
