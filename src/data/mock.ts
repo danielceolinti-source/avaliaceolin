@@ -40,7 +40,7 @@ const sample = [
   { marca: "Ram", modelo: "1500", versao: "Laramie", emp: "Viva" as Empresa },
 ];
 
-const STATUS_POOL: Status[] = ["Em Avaliação", "Finalizada", "Comprado", "Comprado", "Não Comprado", "Finalizada"];
+const STATUS_POOL: Status[] = ["Em Avaliação", "Avaliado", "Comprado", "Comprado", "Não comprado", "Avaliado"];
 
 function rand<T>(arr: readonly T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
 function placa(i: number) {

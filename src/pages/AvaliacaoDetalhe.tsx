@@ -26,6 +26,7 @@ import {
 import { moedaBR as moeda } from "@/lib/format";
 import { useVendedores } from "@/hooks/useVendedores";
 import FipePicker from "@/components/FipePicker";
+import { cn } from "@/lib/utils";
 
 export default function AvaliacaoDetalhe() {
   const { id } = useParams();
@@ -120,7 +121,7 @@ export default function AvaliacaoDetalhe() {
     if (prevValue === value) return;
 
     // 1. Update Avaliacao
-    const { error: upErr } = await supabase.from("avaliacoes").update({ 
+    const { error: upErr } = await (supabase.from("avaliacoes") as any).update({ 
       [field]: value,
       updated_by: user.id 
     }).eq("id", id);
@@ -130,11 +131,9 @@ export default function AvaliacaoDetalhe() {
     // 2. Insert into History
     await supabase.from("status_history").insert({
       avaliacao_id: id,
-      campo: field === "status" ? "Avaliação" : "Negociação",
-      valor_anterior: prevValue,
-      valor_novo: value,
-      user_id: user.id,
-      user_name: user.user_metadata?.full_name || user.email
+      status_anterior: prevValue ?? null,
+      status_novo: value,
+      alterado_por: user.id,
     });
     
     toast.success("Status atualizado");
@@ -225,6 +224,11 @@ export default function AvaliacaoDetalhe() {
     }
 
     doc.save(`avaliacao-${aval.placa}-${aval.modelo}.pdf`);
+  };
+
+  const onResolveFipe = (data: { marca: string; modelo: string; versao?: string; ano: string; fipe: number }) => {
+    setDraft((prev: any) => ({ ...(prev || {}), ...data }));
+    setFipeOpen(false);
   };
 
   const excluir = async () => {
