@@ -223,8 +223,6 @@ export default function Avaliacoes() {
                     <th className="text-left px-4 py-3">Status</th>
                   </tr>
                 </thead>
-/tr>
-                </thead>
                 <tbody>
                   {data.map((a) => {
                     const d = a.data_avaliacao || a.created_at;
