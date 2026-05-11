@@ -211,34 +211,19 @@ export default function NovaAvaliacao() {
       console.log("[OCR] Placa final:", detected);
 
       if (detected && detected.length === 7) {
-        const valid = PLACA_REGEX.test(detected);
+        const formatted = detected.toUpperCase();
         
-        // 3. Preenchimento Robusto com Retry Loop
-        let attempts = 0;
-        const maxAttempts = 10;
-        setDetectedPlate(detected);
+        // Preenchimento direto via React state — funcional em 100% dos dispositivos.
+        // Não depende de refs DOM que podem ficar nulos no Chrome mobile após câmera.
+        setPlaca(formatted);
+        setDetectedPlate(formatted);
+        setShowPasteButton(false);
+        setScanning(false);
         
-        const interval = setInterval(() => {
-          attempts++;
-          const input = placaRef.current;
-          if (input) {
-            input.focus();
-            input.value = detected.toUpperCase();
-            input.dispatchEvent(new Event("input", { bubbles: true }));
-            input.dispatchEvent(new Event("change", { bubbles: true }));
-            setPlaca(detected.toUpperCase());
-            clearInterval(interval);
-            toast.success(`Placa detectada: ${detected}`, { id: toastId });
-            setShowPasteButton(false);
-          } else if (attempts >= maxAttempts) {
-            clearInterval(interval);
-            setShowPasteButton(true);
-            setPlaca(detected.toUpperCase());
-            toast.warning("Placa lida, mas o campo não foi encontrado. Use o botão flutuante.", { id: toastId });
-          }
-        }, 200);
+        toast.success(`Placa detectada: ${formatted}`, { id: toastId });
 
-        setTimeout(() => setFipeOpen(true), 800);
+        // Abre FIPE automaticamente após um pequeno delay
+        setTimeout(() => setFipeOpen(true), 600);
       } else {
         setScanning(false);
         toast.error("Não consegui ler a placa. Centralize-a, com boa iluminação, ou digite manualmente.", { id: toastId });
@@ -271,8 +256,8 @@ export default function NovaAvaliacao() {
       chassi: chassi || null,
       cliente: cliente || null, 
       modalidade, 
-      // Garante que a data enviada seja interpretada no fuso correto (Brasília)
-      data_avaliacao: `${data}T12:00:00-03:00`,
+      // Envia data como YYYY-MM-DD puro — a coluna é tipo `date`, não `timestamptz`
+      data_avaliacao: data,
       marca, modelo, ano, km: km ? Number(km) : null,
       fipe: fipe || null, custo: custo || null, avaliacao: aval || null,
       vendedor, origem: (origem as any) || null, status,

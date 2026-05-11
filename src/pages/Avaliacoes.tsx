@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/hooks/useRole";
-// v1.0.2 - Fixed hojeBR import
-import { dataBR, hojeBR, moedaBR as moeda } from "@/lib/format";
+// v1.0.3 - Fixed date timezone bug
+import { dataBR, hojeBR, moedaBR as moeda, parseDate } from "@/lib/format";
 import { downloadCSV, toCSV } from "@/lib/csv";
 
 export default function Avaliacoes() {
@@ -41,7 +41,7 @@ export default function Avaliacoes() {
     for (const a of rows) {
       const d = a.data_avaliacao || a.created_at;
       if (!d) continue;
-      const dt = new Date(d);
+      const dt = parseDate(d);
       if (dt.getFullYear() !== ano) continue;
       const m = dt.getMonth() + 1;
       c[m] = (c[m] || 0) + 1;
@@ -60,7 +60,7 @@ export default function Avaliacoes() {
     
     const d = a.data_avaliacao || a.created_at;
     if (d) {
-      const dt = new Date(d);
+      const dt = parseDate(d);
       if (dt.getFullYear() !== ano) return false;
       if (mes !== "todos" && dt.getMonth() + 1 !== mes) return false;
     }
@@ -75,7 +75,9 @@ export default function Avaliacoes() {
     const hojeString = hojeBR();
     return rows.filter(a => {
       const d = a.data_avaliacao || a.created_at;
-      return d && new Date(d).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }) === hojeString;
+      if (!d) return false;
+      const dt = parseDate(d);
+      return dt.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }) === hojeString;
     }).length;
   }, [rows]);
 

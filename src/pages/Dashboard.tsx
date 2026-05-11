@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { dataBR, hojeBR, moedaBR } from "@/lib/format";
+import { dataBR, hojeBR, moedaBR, parseDate } from "@/lib/format";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 const moeda = moedaBR;
@@ -68,17 +68,17 @@ export default function Dashboard() {
   const startMonthString = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).slice(0, 7) + "-01";
 
   const hoje = data.filter((d) => {
-    const itemDate = new Date(d.created_at || d.data_avaliacao).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+    const itemDate = parseDate(d.data_avaliacao || d.created_at).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     return itemDate === hojeString;
   }).length;
 
   const semana = data.filter((d) => {
-    const itemDate = new Date(d.created_at || d.data_avaliacao);
+    const itemDate = parseDate(d.data_avaliacao || d.created_at);
     return itemDate >= startWeek;
   }).length;
 
   const mes = data.filter((d) => {
-    const itemDate = new Date(d.created_at || d.data_avaliacao).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+    const itemDate = parseDate(d.data_avaliacao || d.created_at).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     return itemDate.startsWith(startMonthString.slice(0, 7));
   }).length;
   

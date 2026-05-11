@@ -59,6 +59,7 @@ export function Topbar() {
         {online ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
         {online ? "Online" : "Offline"}
       </Badge>
+      </div>
 
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="icon" className="h-9 w-9 hidden md:flex">

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Download, Loader2, TrendingUp, ShoppingCart, XCircle, Wallet, Percent, BarChart3 } from "lucide-react";
 import { useApp } from "@/store/app";
-import { dataBR, moedaBR as moeda } from "@/lib/format";
+import { dataBR, moedaBR as moeda, parseDate } from "@/lib/format";
 import { downloadCSV, toCSV } from "@/lib/csv";
 import { MESES, STATUS, STATUS_COLORS, Status } from "@/data/constants";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, Legend } from "recharts";
@@ -46,7 +46,7 @@ export default function Relatorios() {
     if (origem !== "todos" && a.origem !== origem) return false;
     const d = a.data_avaliacao || a.created_at;
     if (!d) return true;
-    const dt = new Date(d);
+    const dt = parseDate(d);
     if (dt.getFullYear() !== ano) return false;
     if (mes !== "todos" && dt.getMonth() + 1 !== mes) return false;
     return true;
@@ -70,7 +70,7 @@ export default function Relatorios() {
     const map: Record<number, { mes: string; total: number; comprados: number; investido: number }> = {};
     for (let i = 1; i <= 12; i++) map[i] = { mes: MESES[i - 1].abrev, total: 0, comprados: 0, investido: 0 };
     for (const a of filtrado) {
-      const d = new Date(a.data_avaliacao || a.created_at);
+      const d = parseDate(a.data_avaliacao || a.created_at);
       const m = d.getMonth() + 1;
       map[m].total++;
       if (a.status === "Comprado") {
