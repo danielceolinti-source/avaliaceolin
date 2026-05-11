@@ -88,7 +88,7 @@ export default function Avaliacoes() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="font-display text-3xl font-bold">Avaliações</h1>
@@ -98,8 +98,8 @@ export default function Avaliacoes() {
           </div>
           <p className="text-muted-foreground text-sm mt-1">{data.length} resultados em {mes === "todos" ? ano : `${MESES[mes - 1].nome}/${ano}`}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" disabled={!data.length} onClick={() => {
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex gap-2">
+          <Button variant="outline" disabled={!data.length} className="w-full sm:w-auto" onClick={() => {
             const csv = toCSV(data.map((a) => ({
               numero: a.numero, data: dataBR(a.data_avaliacao || a.created_at), empresa: a.empresa,
               avaliador: a.created_by_name || "—",
@@ -113,38 +113,41 @@ export default function Avaliacoes() {
             downloadCSV(`avaliacoes-${periodo}.csv`, csv);
           }}><Download className="h-4 w-4 mr-2" /> Exportar</Button>
           {canCreateAssessment && (
-            <Button asChild className="bg-gradient-primary text-primary-foreground shadow-glow">
+            <Button asChild className="w-full sm:w-auto bg-gradient-primary text-primary-foreground shadow-glow">
               <Link to="/nova"><Plus className="h-4 w-4 mr-2" /> Nova Avaliação</Link>
             </Button>
           )}
         </div>
       </div>
 
-      {/* Navegação mensal estilo abas da planilha */}
+      {/* Navegação mensal estilo abas da planilha com scroll horizontal */}
       <Card>
         <CardContent className="p-3">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setAno(ano - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-            <div className="font-display font-bold text-lg w-16 text-center">{ano}</div>
-            <Button variant="ghost" size="icon" onClick={() => setAno(ano + 1)}><ChevronRight className="h-4 w-4" /></Button>
-            <div className="h-6 w-px bg-border mx-2" />
-            <div className="flex flex-wrap gap-1.5 flex-1">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-1 shrink-0">
+              <Button variant="ghost" size="icon" onClick={() => setAno(ano - 1)} className="h-8 w-8"><ChevronLeft className="h-4 w-4" /></Button>
+              <div className="font-display font-bold text-base w-12 text-center">{ano}</div>
+              <Button variant="ghost" size="icon" onClick={() => setAno(ano + 1)} className="h-8 w-8"><ChevronRight className="h-4 w-4" /></Button>
+            </div>
+            <div className="h-6 w-px bg-border mx-1 shrink-0" />
+            <div className="flex gap-1.5 flex-1 min-w-0">
               <button
                 onClick={() => setMes("todos")}
                 data-active={mes === "todos"}
-                className="h-9 px-3 rounded-md border bg-card text-xs font-semibold transition-all data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:border-primary hover:border-primary/40"
+                className="h-9 px-3 rounded-md border bg-card text-xs font-semibold transition-all shrink-0 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:border-primary hover:border-primary/40"
               >
                 ANO TODO
               </button>
-              {MESES.map((m) => {
-                const count = contadores[m.num] || 0;
+              <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                {MESES.map((m) => {
+                  const count = contadores[m.num] || 0;
                 return (
                   <button
                     key={m.num}
                     onClick={() => setMes(m.num)}
                     data-active={mes === m.num}
                     className={cn(
-                      "h-9 px-3 rounded-md border bg-card text-xs font-semibold transition-all flex items-center gap-1.5",
+                      "h-9 px-3 rounded-md border bg-card text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0",
                       "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:border-primary",
                       "hover:border-primary/40",
                       count === 0 && mes !== m.num && "text-muted-foreground"
@@ -157,6 +160,7 @@ export default function Avaliacoes() {
                   </button>
                 );
               })}
+              </div>
             </div>
           </div>
         </CardContent>

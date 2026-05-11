@@ -145,16 +145,16 @@ export default function Dashboard() {
   }
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="text-xs uppercase tracking-widest text-muted-foreground">Visão geral</div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold">Dashboard Operacional</h1>
-          <p className="text-muted-foreground text-sm mt-1">Volume de avaliações, produtividade e desempenho por empresa.</p>
+          <h1 className="font-display text-3xl font-bold">Dashboard Operacional</h1>
+          <p className="text-muted-foreground text-sm mt-1">Volume de avaliações e produtividade.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="lg">
+              <Button variant="outline" className="w-full sm:w-auto">
                 <FileDown className="h-4 w-4 mr-2" /> Exportar
               </Button>
             </DropdownMenuTrigger>
@@ -175,14 +175,14 @@ export default function Dashboard() {
           </DropdownMenu>
 
           {canCreateAssessment && (
-            <Button asChild size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow">
+            <Button asChild className="w-full sm:w-auto bg-gradient-primary text-primary-foreground shadow-glow">
               <Link to="/nova">+ Nova Avaliação</Link>
             </Button>
           )}
         </div>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-1 xs:grid-cols-2 lg:grid-cols-4">
         <Kpi icon={Activity} label="Avaliações hoje" value={fmt(hoje)} />
         <Kpi icon={CalendarDays} label="Últimos 7 dias" value={fmt(semana)} accent="bg-info" />
         <Kpi icon={CalendarRange} label="No mês" value={fmt(mes)} accent="bg-warning" />

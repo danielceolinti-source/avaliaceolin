@@ -32,10 +32,8 @@ export function Topbar() {
     : "/logos/grupo.png";
 
   return (
-    <div className="sticky top-0 z-40 w-full glass border-b px-4 py-2 flex items-center justify-between gap-3 shadow-sm transition-premium mb-5 -mx-4 md:-mx-6 w-[calc(100%+2rem)] md:w-[calc(100%+3rem)]">
-      <div className="flex flex-1 items-center gap-2 md:gap-3">
-        <div className="flex-1 lg:hidden" />
-
+    <div className="flex-1 flex items-center justify-between gap-2 md:gap-3">
+      <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
         <Select
           value={empresaFiltro}
           onValueChange={(v) => {
@@ -43,47 +41,47 @@ export function Topbar() {
             setTheme(v === "Viva" ? "viva" : "fiat");
           }}
         >
-          <SelectTrigger className="h-9 w-[130px] md:w-[180px] bg-background/50 border-primary/20 hover:bg-accent transition-colors">
+          <SelectTrigger className="h-9 w-[110px] md:w-[180px] bg-background/50 border-primary/20 hover:bg-accent transition-colors">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Todas">Todas empresas</SelectItem>
+            <SelectItem value="Todas">Todas</SelectItem>
             {EMPRESAS.map((e) => (
               <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <Badge variant="outline" className={`gap-1 hidden sm:inline-flex ${online ? "text-success border-success/40" : "text-warning border-warning/40"}`}>
+        <Badge variant="outline" className={`gap-1 hidden lg:inline-flex ${online ? "text-success border-success/40" : "text-warning border-warning/40"}`}>
           {online ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
           {online ? "Online" : "Offline"}
         </Badge>
       </div>
 
-      <div className="flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="h-9 w-9 hidden md:flex">
+      <div className="flex items-center gap-1 md:gap-2">
+        <Button variant="ghost" size="icon" className="h-8 w-8 hidden md:flex">
           <Bell className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleDark}>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleDark}>
           {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9"
+          className="h-8 w-8"
           onClick={async () => { await signOut(); navigate("/auth"); }}
           title="Sair"
         >
           <LogOut className="h-4 w-4" />
         </Button>
-      </div>
-      
-      <div className="h-9 w-9 rounded-full bg-gradient-primary text-primary-foreground grid place-items-center font-semibold text-sm shadow-glow overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all">
-        {(user?.user_metadata as any)?.avatar_url ? (
-          <img src={(user.user_metadata as any).avatar_url} alt="Profile" className="h-full w-full object-cover" />
-        ) : (
-          initials
-        )}
+        
+        <div className="h-8 w-8 rounded-full bg-gradient-primary text-primary-foreground grid place-items-center font-semibold text-xs shadow-glow overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all ml-1">
+          {(user?.user_metadata as any)?.avatar_url ? (
+            <img src={(user.user_metadata as any).avatar_url} alt="Profile" className="h-full w-full object-cover" />
+          ) : (
+            initials
+          )}
+        </div>
       </div>
     </div>
   );

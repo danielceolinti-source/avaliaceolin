@@ -179,17 +179,17 @@ export default function NovaAvaliacao() {
         <span>Avaliações</span><ChevronRight className="h-3 w-3" /><span className="text-foreground font-medium">Nova</span>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold">Nova Avaliação</h1>
-          <p className="text-muted-foreground text-sm mt-1">Capture a placa em tempo real para iniciar o processo.</p>
+          <p className="text-muted-foreground text-sm mt-1">Insira os dados técnicos e fotos do veículo.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => salvar("Em Avaliação")} disabled={saving}>
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex gap-2">
+          <Button variant="outline" onClick={() => salvar("Em Avaliação")} disabled={saving} className="w-full sm:w-auto">
             <Save className="h-4 w-4 mr-2" /> Salvar rascunho
           </Button>
-          <Button onClick={() => salvar("Avaliado")} disabled={saving} className="bg-gradient-primary text-primary-foreground shadow-glow">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />} Concluir Avaliação
+          <Button onClick={() => salvar("Avaliado")} disabled={saving} className="w-full sm:w-auto bg-gradient-primary text-primary-foreground shadow-glow">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />} Concluir
           </Button>
         </div>
       </div>
@@ -199,8 +199,8 @@ export default function NovaAvaliacao() {
           <div className="flex items-center gap-2 text-xs uppercase tracking-widest opacity-80">
             <Sparkles className="h-3 w-3" /> Câmera Profissional · OCR Real-time
           </div>
-          <div className="mt-2 grid md:grid-cols-[1fr_auto] gap-4 items-end">
-            <div>
+          <div className="mt-2 grid gap-4 items-end">
+            <div className="w-full">
               <Label className="text-white/80">Placa</Label>
               <Input
                 value={placa}
@@ -209,11 +209,11 @@ export default function NovaAvaliacao() {
                 className="mt-2 h-14 text-2xl font-mono font-bold tracking-widest bg-white/10 border-white/20 text-white placeholder:text-white/40 uppercase"
               />
             </div>
-            <div className="flex gap-2">
-              <Button size="lg" variant="secondary" onClick={() => setCameraOpen(true)} className="h-14 min-w-[120px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:flex md:gap-2">
+              <Button size="lg" variant="secondary" onClick={() => setCameraOpen(true)} className="h-14 md:min-w-[150px]">
                 <Camera className="h-5 w-5 mr-2" /> Abrir Câmera
               </Button>
-              <Button size="lg" onClick={() => setFipeOpen(true)} className="h-14 bg-primary hover:bg-primary/90">
+              <Button size="lg" onClick={() => setFipeOpen(true)} className="h-14 bg-primary hover:bg-primary/90 md:min-w-[120px]">
                 <ScanLine className="h-5 w-5 mr-2" /> FIPE
               </Button>
             </div>

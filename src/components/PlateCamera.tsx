@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Camera, Loader2, Zap } from "lucide-react";
+import { X, Camera, Loader2, Zap, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { withTimeout } from "@/lib/utils-timeout";
+import { toast } from "sonner";
 
 const PLACA_REGEX = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/;
 const OCR_INTERVAL_MS = 3000;
@@ -17,6 +18,7 @@ interface PlateCameraProps {
 export default function PlateCamera({ open, onClose, onDetect }: PlateCameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const busyRef = useRef(false);
@@ -152,6 +154,55 @@ export default function PlateCamera({ open, onClose, onDetect }: PlateCameraProp
     }
   }, [captureFrame, callOcr, stopStream, onDetect]);
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (busyRef.current) return;
+    busyRef.current = true;
+    
+    // Stop camera while processing file
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    try {
+      setStatus("processing");
+      const reader = new FileReader();
+      
+      const b64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const detected = await callOcr(b64);
+      
+      if (detected && detected.length === 7 && PLACA_REGEX.test(detected)) {
+        try { navigator.vibrate?.(200); } catch (_) {}
+        stopStream();
+        onDetect(detected);
+      } else {
+        toast.error("Não foi possível ler a placa nesta foto", {
+          description: "Tente uma foto mais clara ou use a câmera."
+        });
+        setStatus("scanning");
+        // Restart interval if still open
+        if (open) {
+          intervalRef.current = setInterval(doScan, OCR_INTERVAL_MS);
+        }
+      }
+    } catch (err) {
+      console.error("[OCR] File upload error:", err);
+      toast.error("Erro ao processar imagem");
+      setStatus("scanning");
+    } finally {
+      busyRef.current = false;
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   // Start/stop based on open prop
   useEffect(() => {
     if (open) {
@@ -168,8 +219,10 @@ export default function PlateCamera({ open, onClose, onDetect }: PlateCameraProp
     if (status === "scanning" && open) {
       // First scan after 1.5s, then every OCR_INTERVAL_MS
       const firstTimeout = setTimeout(() => {
-        doScan();
-        intervalRef.current = setInterval(doScan, OCR_INTERVAL_MS);
+        if (status === "scanning") {
+          doScan();
+          intervalRef.current = setInterval(doScan, OCR_INTERVAL_MS);
+        }
       }, 1500);
       return () => {
         clearTimeout(firstTimeout);
@@ -190,6 +243,16 @@ export default function PlateCamera({ open, onClose, onDetect }: PlateCameraProp
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+      {/* Hidden inputs */}
+      <canvas ref={canvasRef} className="hidden" />
+      <input 
+        ref={fileInputRef} 
+        type="file" 
+        accept="image/*" 
+        className="hidden" 
+        onChange={handleFileUpload}
+      />
+
       {/* Header */}
       <div className="absolute top-0 inset-x-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 to-transparent">
         <div className="text-white">
@@ -266,24 +329,31 @@ export default function PlateCamera({ open, onClose, onDetect }: PlateCameraProp
       </div>
 
       {/* Footer */}
-      <div className="absolute bottom-0 inset-x-0 z-10 p-4 bg-gradient-to-t from-black/70 to-transparent">
-        <div className="flex items-center justify-center gap-3">
-          {status === "processing" ? (
-            <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
-              <Zap className="h-4 w-4 animate-pulse" />
-              Analisando placa...
-            </div>
-          ) : status === "scanning" ? (
-            <div className="text-white/60 text-xs text-center">
-              Aponte a câmera para a placa do veículo.<br />
-              A leitura é automática.
-            </div>
-          ) : null}
+      <div className="absolute bottom-0 inset-x-0 z-10 p-6 bg-gradient-to-t from-black/70 to-transparent">
+        <div className="flex flex-col items-center justify-center gap-6">
+          <div className="flex items-center gap-3">
+            {status === "processing" ? (
+              <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
+                <Zap className="h-4 w-4 animate-pulse" />
+                Analisando imagem...
+              </div>
+            ) : status === "scanning" ? (
+              <div className="text-white/60 text-xs text-center">
+                Aponte a câmera para a placa ou faça upload.
+              </div>
+            ) : null}
+          </div>
+          
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={status === "processing"}
+            className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white rounded-full transition-all active:scale-95 disabled:opacity-50"
+          >
+            <ImageIcon className="h-5 w-5" />
+            <span className="text-sm font-medium">Fazer upload da foto</span>
+          </button>
         </div>
       </div>
-
-      {/* Hidden canvas for frame capture */}
-      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 }
