@@ -181,7 +181,6 @@ export default function Comprados() {
             </CardContent>
           </Card>
         )}
-      </div>
 
         <div className={empresaFiltro === "Todas" ? "lg:col-span-2" : "lg:col-span-3"}>
           <Card>
