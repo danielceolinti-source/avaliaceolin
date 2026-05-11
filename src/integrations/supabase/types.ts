@@ -112,6 +112,7 @@ export type Database = {
           origem: Database["public"]["Enums"]["origem"] | null
           placa: string
           status: Database["public"]["Enums"]["status_avaliacao"]
+          status_negociacao: string
           tags_obs: Json | null
           updated_at: string
           updated_by: string | null
@@ -144,6 +145,7 @@ export type Database = {
           origem?: Database["public"]["Enums"]["origem"] | null
           placa: string
           status?: Database["public"]["Enums"]["status_avaliacao"]
+          status_negociacao?: string
           tags_obs?: Json | null
           updated_at?: string
           updated_by?: string | null
@@ -176,6 +178,7 @@ export type Database = {
           origem?: Database["public"]["Enums"]["origem"] | null
           placa?: string
           status?: Database["public"]["Enums"]["status_avaliacao"]
+          status_negociacao?: string
           tags_obs?: Json | null
           updated_at?: string
           updated_by?: string | null
@@ -216,6 +219,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      status_history: {
+        Row: {
+          alterado_por: string | null
+          avaliacao_id: string
+          created_at: string
+          id: string
+          status_anterior: string | null
+          status_novo: string
+        }
+        Insert: {
+          alterado_por?: string | null
+          avaliacao_id: string
+          created_at?: string
+          id?: string
+          status_anterior?: string | null
+          status_novo: string
+        }
+        Update: {
+          alterado_por?: string | null
+          avaliacao_id?: string
+          created_at?: string
+          id?: string
+          status_anterior?: string | null
+          status_novo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "status_history_avaliacao_id_fkey"
+            columns: ["avaliacao_id"]
+            isOneToOne: false
+            referencedRelation: "avaliacoes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -295,6 +333,7 @@ export type Database = {
         | "Comprado"
         | "Não Comprado"
         | "Cancelado"
+        | "Avaliado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -431,6 +470,7 @@ export const Constants = {
         "Comprado",
         "Não Comprado",
         "Cancelado",
+        "Avaliado",
       ],
     },
   },
