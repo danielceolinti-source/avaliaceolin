@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Download, Filter, Plus, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Download, Filter, Plus, Loader2, ChevronLeft, ChevronRight, User as UserIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "@/store/app";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

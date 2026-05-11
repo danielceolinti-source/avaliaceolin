@@ -10,7 +10,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 import { useRole } from "@/hooks/useRole";
-import { Lock, FileDown, Download } from "lucide-react";
+import { Lock, FileDown, Download, User as UserIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
