@@ -33,32 +33,31 @@ export function Topbar() {
 
   return (
     <div className="sticky top-0 z-40 w-full glass border-b px-4 py-2 flex items-center justify-between gap-3 shadow-sm transition-premium mb-5 -mx-4 md:-mx-6 w-[calc(100%+2rem)] md:w-[calc(100%+3rem)]">
-      <div className="flex-1 lg:hidden" />
+      <div className="flex flex-1 items-center gap-2 md:gap-3">
+        <div className="flex-1 lg:hidden" />
 
-      <div className="flex-1 lg:hidden" />
+        <Select
+          value={empresaFiltro}
+          onValueChange={(v) => {
+            setEmpresaFiltro(v as any);
+            setTheme(v === "Viva" ? "viva" : "fiat");
+          }}
+        >
+          <SelectTrigger className="h-9 w-[130px] md:w-[170px] bg-white border-primary/20">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Todas">Todas empresas</SelectItem>
+            {EMPRESAS.map((e) => (
+              <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Select
-        value={empresaFiltro}
-        onValueChange={(v) => {
-          setEmpresaFiltro(v as any);
-          setTheme(v === "Viva" ? "viva" : "fiat");
-        }}
-      >
-        <SelectTrigger className="h-9 w-[130px] md:w-[170px] bg-white border-primary/20">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="Todas">Todas empresas</SelectItem>
-          {EMPRESAS.map((e) => (
-            <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Badge variant="outline" className={`gap-1 hidden sm:inline-flex ${online ? "text-success border-success/40" : "text-warning border-warning/40"}`}>
-        {online ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-        {online ? "Online" : "Offline"}
-      </Badge>
+        <Badge variant="outline" className={`gap-1 hidden sm:inline-flex ${online ? "text-success border-success/40" : "text-warning border-warning/40"}`}>
+          {online ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+          {online ? "Online" : "Offline"}
+        </Badge>
       </div>
 
       <div className="flex items-center gap-1">
