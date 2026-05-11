@@ -48,15 +48,14 @@ export default function Avaliacoes() {
     }
     return c;
   }, [rows, ano]);
-
-  const data = useMemo(() => rows.filter((a) => {
+  const data = useMemo(() => rows.filter((a) => {
     if (empresaFiltro !== "Todas" && a.empresa !== empresaFiltro) return false;
     
-    // Filtro inteligente para status virtual
-    const isVirtual = a.tags_obs?.includes("VIRTUAL_STATUS_AVALIADO");
-    const currentStatus = isVirtual ? "Avaliado" : a.status;
-    
-    if (status !== "todos" && currentStatus !== status) return false;
+    // Filtro inteligente para ambas as camadas de status
+    if (status !== "todos") {
+      const match = a.status === status || a.status_negociacao === status;
+      if (!match) return false;
+    }
     
     const d = a.data_avaliacao || a.created_at;
     if (d) {
@@ -99,7 +98,9 @@ export default function Avaliacoes() {
               numero: a.numero, data: dataBR(a.data_avaliacao || a.created_at), empresa: a.empresa,
               vendedor: a.vendedor, cliente: a.cliente, modalidade: a.modalidade, placa: a.placa,
               marca: a.marca, modelo: a.modelo, versao: a.versao, ano: a.ano, km: a.km,
-              fipe: a.fipe, custo: a.custo, avaliacao: a.avaliacao, status: a.status, observacoes: a.observacoes,
+              fipe: a.fipe, custo: a.custo, avaliacao: a.avaliacao, 
+              status_avaliacao: a.status, status_negociacao: a.status_negociacao, 
+              observacoes: a.observacoes,
             })));
             const periodo = mes === "todos" ? `${ano}` : `${MESES[mes - 1].abrev}-${ano}`;
             downloadCSV(`avaliacoes-${periodo}.csv`, csv);
@@ -161,10 +162,20 @@ export default function Avaliacoes() {
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Placa, cliente, modelo, vendedor…" className="pl-9" />
           </div>
           <Select value={status} onValueChange={(v) => setStatus(v as any)}>
-            <SelectTrigger className="md:w-[200px]"><Filter className="h-4 w-4 mr-2" /><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectTrigger className="md:w-[220px]"><Filter className="h-4 w-4 mr-2" /><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos status</SelectItem>
-              {STATUS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              <optgroup label="Avaliação">
+                <SelectItem value="Em Avaliação">Em Avaliação</SelectItem>
+                <SelectItem value="Avaliado">Avaliado</SelectItem>
+              </optgroup>
+              <optgroup label="Negociação">
+                <SelectItem value="Em negociação">Em negociação</SelectItem>
+                <SelectItem value="Aguardando retorno">Aguardando retorno</SelectItem>
+                <SelectItem value="Comprado">Comprado</SelectItem>
+                <SelectItem value="Não comprado">Não comprado</SelectItem>
+                <SelectItem value="Arquivado">Arquivado</SelectItem>
+              </optgroup>
             </SelectContent>
           </Select>
         </CardContent>
@@ -197,7 +208,6 @@ export default function Avaliacoes() {
                     <th className="text-right px-4 py-3 hidden md:table-cell">FIPE</th>
                     <th className="text-right px-4 py-3 hidden md:table-cell">Custo</th>
                     <th className="text-right px-4 py-3">Avaliação</th>
-                    <th className="text-left px-4 py-3 hidden lg:table-cell">Modal.</th>
                     <th className="text-left px-4 py-3">Status</th>
                   </tr>
                 </thead>
@@ -217,14 +227,17 @@ export default function Avaliacoes() {
                         <td className="px-4 py-3 text-right font-mono text-xs hidden md:table-cell text-muted-foreground">{moeda(a.fipe)}</td>
                         <td className="px-4 py-3 text-right font-mono text-xs hidden md:table-cell text-muted-foreground">{moeda(a.custo)}</td>
                         <td className="px-4 py-3 text-right font-mono font-bold text-primary">{moeda(a.avaliacao)}</td>
-                        <td className="px-4 py-3 hidden lg:table-cell">
-                          {a.modalidade && <Badge variant="outline" className={cn("text-[10px] font-bold border-none", a.modalidade === "PRESENCIAL" ? "bg-success/10 text-success" : "bg-info/10 text-info")}>{a.modalidade}</Badge>}
-                        </td>
                         <td className="px-4 py-3">
-                          <Badge variant="outline" className={cn("gap-1.5 font-bold border-none shadow-sm", a.tags_obs?.includes("VIRTUAL_STATUS_AVALIADO") ? "bg-info/10 text-info" : STATUS_COLORS[a.status as Status])}>
-                            <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", a.tags_obs?.includes("VIRTUAL_STATUS_AVALIADO") ? "bg-info" : (a.status === "Finalizada" || a.status === "Comprado" ? "bg-success" : (a.status === "Cancelada" ? "bg-destructive" : "bg-warning")))} />
-                            {a.tags_obs?.includes("VIRTUAL_STATUS_AVALIADO") ? "Avaliado" : a.status}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant="outline" className={cn("text-[10px] font-bold border-none shadow-sm", STATUS_COLORS[a.status])}>
+                              {a.status}
+                            </Badge>
+                            {a.status_negociacao !== "Sem definição" && (
+                              <Badge variant="outline" className={cn("text-[10px] font-bold border-none shadow-sm", STATUS_COLORS[a.status_negociacao])}>
+                                {a.status_negociacao}
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

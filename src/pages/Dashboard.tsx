@@ -82,7 +82,9 @@ export default function Dashboard() {
     return itemDate.startsWith(startMonthString.slice(0, 7));
   }).length;
   
-  const comprados = data.filter((d) => d.status === "Comprado").length;
+  const comprados = data.filter((d) => d.status_negociacao === "Comprado").length;
+  const emAvaliacao = data.filter((d) => d.status === "Em Avaliação").length;
+  const avaliados = data.filter((d) => d.status === "Avaliado").length;
 
   const exportarPDF = (tipo: "hoje" | "mes") => {
     const start = new Date();

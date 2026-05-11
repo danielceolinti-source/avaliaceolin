@@ -12,13 +12,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  ChevronLeft, Camera, Loader2, Trash2, Check, X, ShoppingCart, Ban, ImagePlus, Pencil, Save, ScanLine, FileDown
+  ChevronLeft, Camera, Loader2, Trash2, Check, X, ShoppingCart, Ban, ImagePlus, Pencil, Save, ScanLine, FileDown,
+  History, Clock, User as UserIcon
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { dataBR } from "@/lib/format";
+import { dataBR, dataHoraBR } from "@/lib/format";
 import { toast } from "sonner";
-import { STATUS, STATUS_COLORS, Status, MODALIDADES, ORIGENS, EMPRESAS } from "@/data/constants";
+import { 
+  STATUS_AVALIACAO, STATUS_NEGOCIACAO, STATUS_COLORS, 
+  StatusAvaliacao, StatusNegociacao, MODALIDADES, ORIGENS, EMPRESAS 
+} from "@/data/constants";
 import { moedaBR as moeda } from "@/lib/format";
 import { useVendedores } from "@/hooks/useVendedores";
 import FipePicker from "@/components/FipePicker";
@@ -39,6 +43,7 @@ export default function AvaliacaoDetalhe() {
   const [saving, setSaving] = useState(false);
   const [fipeOpen, setFipeOpen] = useState(false);
   const [perfilAvaliador, setPerfilAvaliador] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
   const { vendedores } = useVendedores(draft?.empresa);
 
   const podeEditar = !!aval && canEditAssessment(aval.created_by);
@@ -50,6 +55,8 @@ export default function AvaliacaoDetalhe() {
     const { data } = await supabase.from("avaliacoes").select("*").eq("id", id).maybeSingle();
     setAval(data);
     setDraft(data);
+
+    // Fotos
     const { data: fs } = await supabase.from("avaliacao_fotos").select("*").eq("avaliacao_id", id).order("created_at");
     if (fs) {
       const withUrls = await Promise.all(fs.map(async (f) => {
@@ -59,10 +66,18 @@ export default function AvaliacaoDetalhe() {
       setFotos(withUrls);
     }
     
+    // Perfil
     if (data?.created_by) {
       const { data: p } = await supabase.from("profiles").select("*").eq("user_id", data.created_by).single();
       setPerfilAvaliador(p);
     }
+
+    // Histórico de Status
+    const { data: hist } = await supabase.from("status_history")
+      .select("*")
+      .eq("avaliacao_id", id)
+      .order("created_at", { ascending: false });
+    setHistory(hist || []);
     
     setLoading(false);
   };
@@ -98,26 +113,32 @@ export default function AvaliacaoDetalhe() {
     setFotos((arr) => arr.filter((x) => x.id !== foto.id));
   };
 
-  const mudarStatus = async (status: Status) => {
-    if (!id || !user) return;
+  const updateStatus = async (field: "status" | "status_negociacao", value: string) => {
+    if (!id || !user || !aval) return;
     
-    // Virtual Status Persistence: Usamos tags para lembrar do status 'Avaliado'
-    const isVirtual = status === "Avaliado";
-    const dbStatus = isVirtual ? "Em Avaliação" : status;
-    const newTags = isVirtual 
-      ? Array.from(new Set([...(aval.tags_obs || []), "VIRTUAL_STATUS_AVALIADO"]))
-      : (aval.tags_obs || []).filter(t => t !== "VIRTUAL_STATUS_AVALIADO");
-    
-    const { error } = await supabase.from("avaliacoes").update({ 
-      status: dbStatus, 
-      tags_obs: newTags,
+    const prevValue = aval[field];
+    if (prevValue === value) return;
+
+    // 1. Update Avaliacao
+    const { error: upErr } = await supabase.from("avaliacoes").update({ 
+      [field]: value,
       updated_by: user.id 
     }).eq("id", id);
     
-    if (error) return toast.error(error.message);
+    if (upErr) return toast.error(upErr.message);
+
+    // 2. Insert into History
+    await supabase.from("status_history").insert({
+      avaliacao_id: id,
+      campo: field === "status" ? "Avaliação" : "Negociação",
+      valor_anterior: prevValue,
+      valor_novo: value,
+      user_id: user.id,
+      user_name: user.user_metadata?.full_name || user.email
+    });
     
-    toast.success(`Status: ${status}`);
-    setAval({ ...aval, status, tags_obs: newTags });
+    toast.success("Status atualizado");
+    load(); // Refresh data
   };
 
   const salvarEdicao = async () => {
@@ -148,17 +169,10 @@ export default function AvaliacaoDetalhe() {
     const pageWidth = doc.internal.pageSize.getWidth();
     
     // Header
-    const corEmpresa: [number, number, number] = aval.empresa === 'Ceolin' ? [206, 43, 55] : [128, 130, 133]; // Fiat Red vs Jeep Gray
-    const corAcento = aval.empresa === 'Ceolin' ? [0, 146, 70] : [35, 31, 32]; // Fiat Green vs Jeep Dark
+    const corEmpresa: [number, number, number] = aval.empresa === 'Ceolin' ? [206, 43, 55] : [128, 130, 133];
     
     doc.setFillColor(corEmpresa[0], corEmpresa[1], corEmpresa[2]);
     doc.rect(0, 0, pageWidth, 40, "F");
-    
-    // Suporte a detalhe em verde para Ceolin no header
-    if (aval.empresa === 'Ceolin') {
-      doc.setFillColor(0, 146, 70);
-      doc.rect(0, 38, pageWidth, 2, "F");
-    }
     
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
@@ -177,19 +191,15 @@ export default function AvaliacaoDetalhe() {
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text(`${aval.marca} ${aval.modelo}`, 15, 55);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`${aval.versao || ''}`, 15, 62);
 
     autoTable(doc, {
       startY: 70,
-      head: [["Placa", "Ano", "KM", "Cor", "Combustível"]],
-      body: [[aval.placa, aval.ano, aval.km?.toLocaleString('pt-BR') || '—', aval.cor || '—', aval.combustivel || '—']],
+      head: [["Placa", "Ano", "KM", "Status", "Negociação"]],
+      body: [[aval.placa, aval.ano, aval.km?.toLocaleString('pt-BR') || '—', aval.status, aval.status_negociacao]],
       theme: 'striped',
       headStyles: { fillColor: corEmpresa }
     });
 
-    // Values
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 10,
       head: [["FIPE", "Preço Sugerido", "Valor Avaliação"]],
@@ -199,44 +209,34 @@ export default function AvaliacaoDetalhe() {
       styles: { fontSize: 12, fontStyle: 'bold', halign: 'center' }
     });
 
-    // Evaluator Info (The requested feature)
     const finalY = (doc as any).lastAutoTable.finalY + 20;
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.text("RESPONSÁVEL PELA AVALIAÇÃO", 15, finalY);
-    
     doc.setFont("helvetica", "normal");
     doc.text(`Nome: ${perfilAvaliador?.full_name || aval.created_by_name || '—'}`, 15, finalY + 7);
-    doc.text(`E-mail: ${perfilAvaliador?.email_corporativo || '—'}`, 15, finalY + 13);
-    doc.text(`WhatsApp: ${perfilAvaliador?.telefone || '—'}`, 15, finalY + 19);
 
     if (aval.observacoes) {
       doc.setFont("helvetica", "bold");
-      doc.text("OBSERVAÇÕES TÉCNICAS", 15, finalY + 35);
+      doc.text("OBSERVAÇÕES TÉCNICAS", 15, finalY + 25);
       doc.setFont("helvetica", "normal");
       const splitObs = doc.splitTextToSize(aval.observacoes, pageWidth - 30);
-      doc.text(splitObs, 15, finalY + 42);
+      doc.text(splitObs, 15, finalY + 32);
     }
 
     doc.save(`avaliacao-${aval.placa}-${aval.modelo}.pdf`);
-    toast.success("PDF gerado");
   };
 
   const excluir = async () => {
-    if (!id || !confirm("Excluir esta avaliação? Esta ação é irreversível.")) return;
+    if (!id || !confirm("Excluir esta avaliação?")) return;
     const { error } = await supabase.from("avaliacoes").delete().eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Avaliação excluída");
+    toast.success("Excluída");
     navigate("/avaliacoes");
   };
 
-  const onResolveFipe = (d: { marca: string; modelo: string; versao?: string; ano: string; fipe: number }) => {
-    setDraft({ ...draft, marca: d.marca, modelo: d.versao || d.modelo, versao: d.versao, ano: d.ano, fipe: d.fipe });
-    setFipeOpen(false);
-  };
-
-  if (loading) return <div className="py-20 grid place-items-center text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin" /></div>;
-  if (!aval) return <div className="py-20 text-center"><p>Avaliação não encontrada</p><Button asChild className="mt-4"><Link to="/avaliacoes">Voltar</Link></Button></div>;
+  if (loading) return <div className="py-20 grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  if (!aval) return <div className="py-20 text-center"><p>Não encontrada</p></div>;
 
   const d = editing ? draft : aval;
 
@@ -247,29 +247,17 @@ export default function AvaliacaoDetalhe() {
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ChevronLeft className="h-4 w-4 mr-1" /> Voltar</Button>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className={STATUS_COLORS[aval.status as Status]}>{aval.status}</Badge>
-          {!editing && (
-            <Button size="sm" variant="outline" onClick={gerarPDF} className="gap-2">
-              <FileDown className="h-4 w-4" /> PDF
-            </Button>
-          )}
-          {podeEditar && !editing && (
-            <Button size="sm" variant="outline" onClick={() => { setDraft(aval); setEditing(true); }}>
-              <Pencil className="h-4 w-4 mr-2" /> Editar
-            </Button>
-          )}
+          <Badge className={cn("px-3 py-1", STATUS_COLORS[aval.status])}>{aval.status}</Badge>
+          <Badge variant="outline" className={cn("px-3 py-1", STATUS_COLORS[aval.status_negociacao])}>{aval.status_negociacao}</Badge>
+          {!editing && <Button size="sm" variant="outline" onClick={gerarPDF}><FileDown className="h-4 w-4 mr-2" /> PDF</Button>}
+          {podeEditar && !editing && <Button size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4 mr-2" /> Editar</Button>}
           {editing && (
             <>
-              <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setDraft(aval); }}>Cancelar</Button>
+              <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button>
               <Button size="sm" onClick={salvarEdicao} disabled={saving} className="bg-gradient-primary text-primary-foreground">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />} Salvar
               </Button>
             </>
-          )}
-          {podeExcluir && !editing && (
-            <Button size="sm" variant="outline" onClick={excluir} className="text-destructive border-destructive/40 hover:bg-destructive/10">
-              <Trash2 className="h-4 w-4 mr-2" /> Excluir
-            </Button>
           )}
         </div>
       </div>
@@ -278,21 +266,26 @@ export default function AvaliacaoDetalhe() {
         <div>
           <div className="text-xs text-muted-foreground font-mono">#{aval.numero} · {aval.empresa}</div>
           <h1 className="font-display text-3xl font-bold">{d.marca} {d.modelo}</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {d.ano} {d.km ? `• ${Number(d.km).toLocaleString("pt-BR")} km` : ""} • Placa <span className="font-mono">{d.placa}</span>
-          </p>
+          <p className="text-muted-foreground text-sm mt-1">{d.ano} • {d.km ? `${Number(d.km).toLocaleString()} km` : ""} • Placa {d.placa}</p>
         </div>
         {podeMudarStatus && !editing && (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => mudarStatus("Comprado")} className="border-success/40 text-success hover:bg-success/10"><ShoppingCart className="h-4 w-4 mr-2" /> Comprado</Button>
-            <Button variant="outline" onClick={() => mudarStatus("Não Comprado")} className="border-destructive/40 text-destructive hover:bg-destructive/10"><X className="h-4 w-4 mr-2" /> Não Comprado</Button>
-            <Button variant="outline" onClick={() => mudarStatus("Cancelado")}><Ban className="h-4 w-4 mr-2" /> Cancelar</Button>
-            {aval.status === "Em Avaliação" && (
-              <>
-                <Button variant="outline" onClick={() => mudarStatus("Avaliado")} className="border-info/40 text-info hover:bg-info/10"><Check className="h-4 w-4 mr-2" /> Marcar como Avaliado</Button>
-                <Button onClick={() => mudarStatus("Finalizada")} className="bg-gradient-primary text-primary-foreground shadow-glow"><Check className="h-4 w-4 mr-2" /> Finalizar</Button>
-              </>
-            )}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2 justify-end">
+              <span className="text-[10px] uppercase font-bold text-muted-foreground w-full text-right mb-1">Status Avaliação</span>
+              {STATUS_AVALIACAO.map(s => (
+                <Button key={s} size="sm" variant={aval.status === s ? "default" : "outline"} onClick={() => updateStatus("status", s)} className="h-8">
+                  {aval.status === s && <Check className="h-3 w-3 mr-1" />}{s}
+                </Button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2 justify-end">
+              <span className="text-[10px] uppercase font-bold text-muted-foreground w-full text-right mb-1">Status Negociação</span>
+              {STATUS_NEGOCIACAO.map(s => (
+                <Button key={s} size="sm" variant={aval.status_negociacao === s ? "default" : "outline"} onClick={() => updateStatus("status_negociacao", s)} className="h-8">
+                  {aval.status_negociacao === s && <Check className="h-3 w-3 mr-1" />}{s}
+                </Button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -306,131 +299,120 @@ export default function AvaliacaoDetalhe() {
           <CardContent className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
             <Field label="Placa"><Input value={draft.placa || ""} onChange={(e) => setDraft({ ...draft, placa: e.target.value.toUpperCase() })} className="font-mono uppercase" /></Field>
             <Field label="Cliente"><Input value={draft.cliente || ""} onChange={(e) => setDraft({ ...draft, cliente: e.target.value })} /></Field>
-            <Field label="Data">
-              <Input type="date" value={draft.data_avaliacao || ""} onChange={(e) => setDraft({ ...draft, data_avaliacao: e.target.value })} />
-            </Field>
-            <Field label="Modalidade">
-              <Select value={draft.modalidade || ""} onValueChange={(v) => setDraft({ ...draft, modalidade: v })}>
-                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                <SelectContent>{MODALIDADES.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-              </Select>
-            </Field>
+            <Field label="Data"><Input type="date" value={draft.data_avaliacao || ""} onChange={(e) => setDraft({ ...draft, data_avaliacao: e.target.value })} /></Field>
             <Field label="Marca"><Input value={draft.marca || ""} onChange={(e) => setDraft({ ...draft, marca: e.target.value })} /></Field>
             <Field label="Modelo / Versão" cols={2}><Input value={draft.modelo || ""} onChange={(e) => setDraft({ ...draft, modelo: e.target.value })} /></Field>
             <Field label="Ano/Modelo"><Input value={draft.ano || ""} onChange={(e) => setDraft({ ...draft, ano: e.target.value })} className="font-mono" /></Field>
-            <Field label="Chassi"><Input value={draft.chassi || ""} onChange={(e) => setDraft({ ...draft, chassi: e.target.value.toUpperCase() })} className="font-mono uppercase" /></Field>
-            <Field label="Quilometragem"><Input type="number" value={draft.km || ""} onChange={(e) => setDraft({ ...draft, km: e.target.value })} /></Field>
             <Field label="FIPE"><Input type="number" value={draft.fipe || ""} onChange={(e) => setDraft({ ...draft, fipe: +e.target.value })} className="font-mono" /></Field>
             <Field label="Custo"><Input type="number" value={draft.custo || ""} onChange={(e) => setDraft({ ...draft, custo: +e.target.value })} className="font-mono" /></Field>
             <Field label="Avaliação"><Input type="number" value={draft.avaliacao || ""} onChange={(e) => setDraft({ ...draft, avaliacao: +e.target.value })} className="font-mono border-primary/40" /></Field>
-            <Field label="Empresa">
-              <Select value={draft.empresa || ""} onValueChange={(v) => setDraft({ ...draft, empresa: v, vendedor: "" })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{EMPRESAS.map((e) => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}</SelectContent>
-              </Select>
-            </Field>
             <Field label="Vendedor">
               <Select value={draft.vendedor || ""} onValueChange={(v) => setDraft({ ...draft, vendedor: v })}>
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>{vendedores.map((v) => <SelectItem key={v.id} value={v.nome}>{v.nome}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Origem">
-              <Select value={draft.origem || ""} onValueChange={(v) => setDraft({ ...draft, origem: v })}>
-                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                <SelectContent>{ORIGENS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-              </Select>
-            </Field>
-            {(isGestor || isTI || isSuperAdmin) && (
-              <Field label="Status">
-                <Select value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{STATUS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                </Select>
-              </Field>
-            )}
             <Field label="Observações" cols={4}>
               <Textarea rows={3} value={draft.observacoes || ""} onChange={(e) => setDraft({ ...draft, observacoes: e.target.value })} />
             </Field>
           </CardContent>
         </Card>
       ) : (
-        <>
-          <div className="grid md:grid-cols-3 gap-4">
-            <Card><CardHeader className="pb-2"><CardTitle className="text-xs uppercase text-muted-foreground">FIPE</CardTitle></CardHeader>
-              <CardContent className="font-mono text-2xl font-bold">{moeda(aval.fipe)}</CardContent></Card>
-            <Card><CardHeader className="pb-2"><CardTitle className="text-xs uppercase text-muted-foreground">Custo</CardTitle></CardHeader>
-              <CardContent className="font-mono text-2xl font-bold">{moeda(aval.custo)}</CardContent></Card>
-            <Card className="border-primary/40"><CardHeader className="pb-2"><CardTitle className="text-xs uppercase text-primary">Avaliação</CardTitle></CardHeader>
-              <CardContent className="font-mono text-2xl font-bold text-primary">{moeda(aval.avaliacao)}</CardContent></Card>
-          </div>
+        <div className="grid md:grid-cols-3 gap-4">
+          <Card className="border-primary/20"><CardHeader className="pb-1"><CardTitle className="text-[10px] uppercase text-muted-foreground">Avaliação de Compra</CardTitle></CardHeader>
+            <CardContent className="font-mono text-2xl font-bold text-primary">{moeda(aval.avaliacao)}</CardContent></Card>
+          <Card><CardHeader className="pb-1"><CardTitle className="text-[10px] uppercase text-muted-foreground">Custo Sugerido</CardTitle></CardHeader>
+            <CardContent className="font-mono text-2xl font-bold">{moeda(aval.custo)}</CardContent></Card>
+          <Card><CardHeader className="pb-1"><CardTitle className="text-[10px] uppercase text-muted-foreground">FIPE</CardTitle></CardHeader>
+            <CardContent className="font-mono text-2xl font-bold">{moeda(aval.fipe)}</CardContent></Card>
+        </div>
+      )}
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Detalhes</CardTitle></CardHeader>
-              <CardContent className="text-sm space-y-2">
+      <div className="grid lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 space-y-4">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Especificações Técnicas</CardTitle></CardHeader>
+            <CardContent className="grid sm:grid-cols-2 gap-4 text-sm">
+              <div className="space-y-2">
                 <Row k="Cliente" v={aval.cliente} />
                 <Row k="Chassi" v={aval.chassi} mono />
+                <Row k="KM" v={aval.km ? Number(aval.km).toLocaleString() : "—"} />
                 <Row k="Vendedor" v={aval.vendedor} />
+              </div>
+              <div className="space-y-2">
+                <Row k="Estado geral" v={aval.estado_geral} />
+                <Row k="Nível avarias" v={aval.nivel_avarias} />
                 <Row k="Origem" v={aval.origem} />
                 <Row k="Modalidade" v={aval.modalidade} />
-                <Row k="Estado geral" v={aval.estado_geral} />
-                <Row k="Nível de avarias" v={aval.nivel_avarias} />
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Histórico & Opcionais</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap gap-1.5">
+                {(aval.historico || []).map((h: string) => <Badge key={h} variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-100">{h}</Badge>)}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {(aval.opcionais || []).map((o: string) => <Badge key={o} variant="outline" className="border-primary/20">{o}</Badge>)}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2"><ImagePlus className="h-4 w-4" /> Fotos ({fotos.length})</CardTitle>
+              {podeEditar && <Button size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>{uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4 mr-2" />} Adicionar</Button>}
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {fotos.map(f => (
+                  <div key={f.id} className="relative aspect-square rounded-lg overflow-hidden border bg-muted group shadow-sm">
+                    <img src={f.url} alt="" className="w-full h-full object-cover" />
+                    <button onClick={() => removerFoto(f)} className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive text-white grid place-items-center opacity-0 group-hover:opacity-100 transition"><Trash2 className="h-3 w-3" /></button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-4">
+          <Card className="bg-muted/30">
+            <CardHeader className="pb-2 flex flex-row items-center gap-2"><History className="h-4 w-4 text-muted-foreground" /><CardTitle className="text-sm">Histórico de Alterações</CardTitle></CardHeader>
+            <CardContent className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+              {history.length === 0 ? (
+                <div className="text-xs text-muted-foreground text-center py-4">Nenhuma alteração registrada</div>
+              ) : (
+                history.map((h, i) => (
+                  <div key={i} className="relative pl-4 border-l-2 border-primary/20 pb-4 last:pb-0">
+                    <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-background border-2 border-primary" />
+                    <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {dataHoraBR(h.created_at)}</div>
+                    <div className="text-xs font-bold mt-0.5">{h.campo}: {h.valor_novo}</div>
+                    <div className="text-[10px] text-muted-foreground line-through opacity-50">Anterior: {h.valor_anterior || "Nenhum"}</div>
+                    <div className="text-[10px] flex items-center gap-1 mt-1 text-primary/80"><UserIcon className="h-3 w-3" /> {h.user_name}</div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {!editing && aval.observacoes && (
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Histórico & Opcionais</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex flex-wrap gap-1.5">
-                  {(aval.historico || []).map((h: string) => <Badge key={h} variant="secondary">{h}</Badge>)}
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {(aval.opcionais || []).map((o: string) => <Badge key={o} variant="outline">{o}</Badge>)}
-                </div>
-              </CardContent>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Observações Técnicas</CardTitle></CardHeader>
+              <CardContent className="text-sm whitespace-pre-wrap leading-relaxed">{aval.observacoes}</CardContent>
             </Card>
-          </div>
-        </>
-      )}
-
-      <Card>
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm flex items-center gap-2"><ImagePlus className="h-4 w-4" /> Fotos ({fotos.length})</CardTitle>
-          {podeEditar && (
-            <Button size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Camera className="h-4 w-4 mr-2" />} Adicionar fotos
-            </Button>
           )}
-        </CardHeader>
-        <CardContent>
-          {fotos.length === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">Nenhuma foto anexada ainda</div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {fotos.map((f) => (
-                <div key={f.id} className="relative aspect-square rounded-lg overflow-hidden border bg-muted group">
-                  <img src={f.url} alt="" className="w-full h-full object-cover" />
-                  <button onClick={() => removerFoto(f)}
-                    className="absolute top-1 right-1 h-7 w-7 rounded-full bg-destructive text-destructive-foreground grid place-items-center opacity-0 group-hover:opacity-100 transition">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {!editing && aval.observacoes && (
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Observações</CardTitle></CardHeader>
-          <CardContent className="text-sm whitespace-pre-wrap">{aval.observacoes}</CardContent>
-        </Card>
-      )}
+          {podeExcluir && !editing && (
+            <Button variant="ghost" size="sm" onClick={excluir} className="w-full text-destructive hover:bg-destructive/10"><Trash2 className="h-3 w-3 mr-2" /> Excluir permanentemente</Button>
+          )}
+        </div>
+      </div>
 
       <Dialog open={fipeOpen} onOpenChange={setFipeOpen}>
         <DialogContent className="max-w-3xl">
-          <DialogHeader><DialogTitle className="font-display">FIPE — seleção encadeada</DialogTitle></DialogHeader>
           <FipePicker initialMarca={draft?.marca} initialModelo={draft?.modelo} initialAno={draft?.ano} onResolve={onResolveFipe} />
         </DialogContent>
       </Dialog>
@@ -440,9 +422,9 @@ export default function AvaliacaoDetalhe() {
 
 function Row({ k, v, mono }: { k: string; v: any; mono?: boolean }) {
   return (
-    <div className="flex justify-between gap-4 border-b border-border/50 pb-1.5 last:border-0">
-      <span className="text-muted-foreground">{k}</span>
-      <span className={mono ? "font-mono" : ""}>{v || "—"}</span>
+    <div className="flex justify-between gap-4 border-b border-border/30 pb-1.5 last:border-0">
+      <span className="text-muted-foreground text-xs uppercase tracking-wider">{k}</span>
+      <span className={cn("text-sm", mono && "font-mono")}>{v || "—"}</span>
     </div>
   );
 }
@@ -451,8 +433,9 @@ function Field({ label, children, cols = 1 }: { label: string; children: React.R
   const span = cols === 4 ? "lg:col-span-4 md:col-span-2" : cols === 2 ? "lg:col-span-2" : "";
   return (
     <div className={span}>
-      <Label className="text-xs uppercase tracking-wider text-muted-foreground">{label}</Label>
+      <Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{label}</Label>
       <div className="mt-1.5">{children}</div>
     </div>
   );
 }
+

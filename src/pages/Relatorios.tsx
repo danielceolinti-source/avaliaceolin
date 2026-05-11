@@ -40,7 +40,13 @@ export default function Relatorios() {
 
   const filtrado = useMemo(() => rows.filter((a) => {
     if (empresaFiltro !== "Todas" && a.empresa !== empresaFiltro) return false;
-    if (statusF !== "todos" && a.status !== statusF) return false;
+    
+    // Filtro inteligente para ambas as camadas
+    if (statusF !== "todos") {
+      const match = a.status === statusF || a.status_negociacao === statusF;
+      if (!match) return false;
+    }
+
     if (vendedor !== "todos" && a.vendedor !== vendedor) return false;
     if (avaliador !== "todos" && a.created_by_name !== avaliador) return false;
     if (origem !== "todos" && a.origem !== origem) return false;
@@ -57,8 +63,8 @@ export default function Relatorios() {
 
   // KPIs
   const total = filtrado.length;
-  const comprados = filtrado.filter((a) => a.status === "Comprado");
-  const naoComprados = filtrado.filter((a) => a.status === "Não Comprado").length;
+  const comprados = filtrado.filter((a) => a.status_negociacao === "Comprado");
+  const naoComprados = filtrado.filter((a) => a.status_negociacao === "Não comprado").length;
   const investido = comprados.reduce((s, a) => s + (Number(a.avaliacao) || 0), 0);
   const fipeTotal = comprados.reduce((s, a) => s + (Number(a.fipe) || 0), 0);
   const economia = fipeTotal - investido;
@@ -73,7 +79,7 @@ export default function Relatorios() {
       const d = parseDate(a.data_avaliacao || a.created_at);
       const m = d.getMonth() + 1;
       map[m].total++;
-      if (a.status === "Comprado") {
+      if (a.status_negociacao === "Comprado") {
         map[m].comprados++;
         map[m].investido += Number(a.avaliacao) || 0;
       }
@@ -88,7 +94,7 @@ export default function Relatorios() {
       const v = a.vendedor || "—";
       if (!map[v]) map[v] = { vendedor: v, total: 0, comprados: 0, investido: 0 };
       map[v].total++;
-      if (a.status === "Comprado") {
+      if (a.status_negociacao === "Comprado") {
         map[v].comprados++;
         map[v].investido += Number(a.avaliacao) || 0;
       }
@@ -96,10 +102,13 @@ export default function Relatorios() {
     return Object.values(map).sort((a, b) => b.total - a.total);
   }, [filtrado]);
 
-  // Por status (pie)
+  // Por status (pie) — Camada de Negociação
   const porStatus = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const a of filtrado) map[a.status] = (map[a.status] || 0) + 1;
+    for (const a of filtrado) {
+      const s = a.status_negociacao !== "Sem definição" ? a.status_negociacao : a.status;
+      map[s] = (map[s] || 0) + 1;
+    }
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [filtrado]);
 
@@ -108,7 +117,7 @@ export default function Relatorios() {
     const pageWidth = doc.internal.pageSize.getWidth();
     
     // Header
-    doc.setFillColor(31, 41, 55); // Slate 800
+    doc.setFillColor(31, 41, 55);
     doc.rect(0, 0, pageWidth, 40, "F");
     
     doc.setTextColor(255, 255, 255);
@@ -151,21 +160,20 @@ export default function Relatorios() {
 
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 20,
-      head: [["Data", "Veículo", "Placa", "Vendedor", "FIPE", "Avaliação", "Status"]],
+      head: [["Data", "Veículo", "Placa", "Vendedor", "Avaliação", "Status Aval.", "Status Negoc."]],
       body: filtrado.map(a => [
         dataBR(a.data_avaliacao || a.created_at),
         `${a.marca} ${a.modelo}`,
         a.placa,
         a.vendedor || "—",
-        moeda(a.fipe),
         moeda(a.avaliacao),
-        a.status
+        a.status,
+        a.status_negociacao
       ]),
       headStyles: { fillColor: [31, 41, 55], fontSize: 8 },
       styles: { fontSize: 7 },
       columnStyles: {
-        4: { halign: "right" },
-        5: { halign: "right" }
+        4: { halign: "right" }
       }
     });
 
@@ -192,27 +200,9 @@ export default function Relatorios() {
         custo: a.custo,
         avaliacao: a.avaliacao,
         status: a.status,
+        negociacao: a.status_negociacao,
         observacoes: a.observacoes,
-      })),
-      [
-        { key: "numero", label: "Nº" },
-        { key: "data", label: "Data" },
-        { key: "empresa", label: "Empresa" },
-        { key: "vendedor", label: "Vendedor" },
-        { key: "cliente", label: "Cliente" },
-        { key: "modalidade", label: "Modalidade" },
-        { key: "placa", label: "Placa" },
-        { key: "marca", label: "Marca" },
-        { key: "modelo", label: "Modelo" },
-        { key: "versao", label: "Versão" },
-        { key: "ano", label: "Ano" },
-        { key: "km", label: "KM" },
-        { key: "fipe", label: "FIPE" },
-        { key: "custo", label: "Custo" },
-        { key: "avaliacao", label: "Avaliação" },
-        { key: "status", label: "Status" },
-        { key: "observacoes", label: "Observações" },
-      ],
+      }))
     );
     const periodo = mes === "todos" ? `${ano}` : `${MESES[mes - 1].abrev}-${ano}`;
     downloadCSV(`relatorio-avaliacoes-${periodo}.csv`, csv);
@@ -251,7 +241,16 @@ export default function Relatorios() {
             <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos status</SelectItem>
-              {STATUS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              <optgroup label="Avaliação">
+                <SelectItem value="Em Avaliação">Em Avaliação</SelectItem>
+                <SelectItem value="Avaliado">Avaliado</SelectItem>
+              </optgroup>
+              <optgroup label="Negociação">
+                <SelectItem value="Em negociação">Em negociação</SelectItem>
+                <SelectItem value="Comprado">Comprado</SelectItem>
+                <SelectItem value="Não comprado">Não comprado</SelectItem>
+                <SelectItem value="Arquivado">Arquivado</SelectItem>
+              </optgroup>
             </SelectContent>
           </Select>
           <Select value={vendedor} onValueChange={setVendedor}>
@@ -311,7 +310,7 @@ export default function Relatorios() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">Status</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Status (Principal)</CardTitle></CardHeader>
           <CardContent className="h-72">
             {porStatus.length ? (
               <ResponsiveContainer>
@@ -399,7 +398,14 @@ export default function Relatorios() {
                     <td className="px-3 py-2">{a.vendedor || "—"}</td>
                     <td className="px-3 py-2 text-right font-mono">{moeda(a.fipe)}</td>
                     <td className="px-3 py-2 text-right font-mono font-semibold">{moeda(a.avaliacao)}</td>
-                    <td className="px-3 py-2"><Badge variant="outline" className={STATUS_COLORS[a.status as Status]}>{a.status}</Badge></td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-col gap-1">
+                        <Badge variant="outline" className={cn("text-[10px]", STATUS_COLORS[a.status])}>{a.status}</Badge>
+                        {a.status_negociacao !== "Sem definição" && (
+                          <Badge variant="outline" className={cn("text-[10px]", STATUS_COLORS[a.status_negociacao])}>{a.status_negociacao}</Badge>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -35,15 +35,37 @@ export type Origem = (typeof ORIGENS)[number];
 export const MODALIDADES = ["PRESENCIAL", "FOTOS"] as const;
 export type Modalidade = (typeof MODALIDADES)[number];
 
-export const STATUS = [
-  "Em Avaliação",
-  "Avaliado",
-  "Finalizada",
+// ═══════════════════════════════════════════════════════
+// SISTEMA DE STATUS EM DUAS CAMADAS
+// ═══════════════════════════════════════════════════════
+
+// Camada 1 — Status da Avaliação (fluxo do avaliador)
+export const STATUS_AVALIACAO = ["Em Avaliação", "Avaliado"] as const;
+export type StatusAvaliacao = (typeof STATUS_AVALIACAO)[number];
+
+// Camada 2 — Status de Negociação/Compra (fluxo do gestor)
+export const STATUS_NEGOCIACAO = [
+  "Sem definição",
+  "Em negociação",
+  "Aguardando retorno",
   "Comprado",
-  "Não Comprado",
-  "Cancelado",
+  "Não comprado",
+  "Arquivado",
 ] as const;
-export type Status = (typeof STATUS)[number];
+export type StatusNegociacao = (typeof STATUS_NEGOCIACAO)[number];
+
+// Todos os status possíveis (para backward compat e filtros)
+export const STATUS = [
+  ...STATUS_AVALIACAO,
+  ...STATUS_NEGOCIACAO,
+] as const;
+export type Status = StatusAvaliacao | StatusNegociacao;
+
+// Legacy status mapping (para dados antigos)
+export const LEGACY_STATUS_MAP: Record<string, { status: StatusAvaliacao; negociacao: StatusNegociacao }> = {
+  "Finalizada": { status: "Avaliado", negociacao: "Sem definição" },
+  "Cancelado": { status: "Avaliado", negociacao: "Arquivado" },
+};
 
 export const ESTADO_GERAL = ["Excelente", "Muito Bom", "Bom", "Regular", "Ruim"] as const;
 export const NIVEL_AVARIAS = ["Sem avarias", "Leve", "Moderado", "Alto", "Grave"] as const;
@@ -63,7 +85,7 @@ export const OPCIONAIS = [
   "Câmera de ré", "Rodas liga leve", "Bancos de couro", "Teto solar", "Piloto automático",
 ];
 
-// Tags rápidas extraídas das observações reais da planilha
+// Tags rápidas (mantidas para leitura de dados antigos, não usadas em novos formulários)
 export const TAGS_OBS = [
   "IPVA pago",
   "IPVA não pago",
@@ -79,13 +101,33 @@ export const TAGS_OBS = [
   "Sinistro",
 ] as const;
 
-export const STATUS_COLORS: Record<Status, string> = {
+// Cores visuais por status — ambas as camadas
+export const STATUS_COLORS: Record<string, string> = {
+  // Camada 1
   "Em Avaliação": "bg-warning/15 text-warning border-warning/30",
   "Avaliado": "bg-info/15 text-info border-info/30",
-  "Finalizada": "bg-success/15 text-success border-success/30",
-  "Comprado": "bg-success text-success-foreground border-success/30",
-  "Não Comprado": "bg-destructive/15 text-destructive border-destructive/30",
-  Cancelado: "bg-muted text-muted-foreground border-border",
+  // Camada 2
+  "Sem definição": "bg-muted text-muted-foreground border-border",
+  "Em negociação": "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  "Aguardando retorno": "bg-purple-500/15 text-purple-600 border-purple-500/30",
+  "Comprado": "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+  "Não comprado": "bg-destructive/15 text-destructive border-destructive/30",
+  "Arquivado": "bg-slate-500/15 text-slate-500 border-slate-500/30",
+  // Legacy
+  "Finalizada": "bg-info/15 text-info border-info/30",
+  "Cancelado": "bg-muted text-muted-foreground border-border",
+};
+
+// Dot colors for pulse indicators
+export const STATUS_DOT: Record<string, string> = {
+  "Em Avaliação": "bg-warning",
+  "Avaliado": "bg-info",
+  "Sem definição": "bg-muted-foreground",
+  "Em negociação": "bg-amber-500",
+  "Aguardando retorno": "bg-purple-500",
+  "Comprado": "bg-emerald-500",
+  "Não comprado": "bg-destructive",
+  "Arquivado": "bg-slate-500",
 };
 
 // Meses operacionais (planilha tem aba por mês de Maio a Dezembro/2026)

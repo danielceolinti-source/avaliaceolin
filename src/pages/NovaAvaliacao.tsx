@@ -9,12 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Camera, ScanLine, Sparkles, Save, Send, Car, ChevronRight,
-  Wrench, ImagePlus, FileCheck2, Loader2, User, Calendar,
+  Camera, ScanLine, Sparkles, Save, Send, ChevronRight,
+  Wrench, FileCheck2, Loader2, User, Calendar, Plus, X,
 } from "lucide-react";
 import {
   EMPRESAS, ESTADO_GERAL, HISTORICO_OPCOES, NIVEL_AVARIAS,
-  OPCIONAIS, ORIGENS, Empresa, MODALIDADES, TAGS_OBS,
+  OPCIONAIS, ORIGENS, Empresa, MODALIDADES,
 } from "@/data/constants";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -23,9 +23,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVendedores } from "@/hooks/useVendedores";
 import { hojeBR, moedaBR as moeda } from "@/lib/format";
 import FipePicker from "@/components/FipePicker";
-import { withTimeout } from "@/lib/utils-timeout";
+import PlateCamera from "@/components/PlateCamera";
 
-function Chip({ active, onClick, children, tone = "default" }: any) {
+function Chip({ active, onClick, children, tone = "default", onRemove }: any) {
   const tones: Record<string, string> = {
     default: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:border-primary",
     success: "data-[active=true]:bg-success data-[active=true]:text-success-foreground data-[active=true]:border-success",
@@ -34,68 +34,30 @@ function Chip({ active, onClick, children, tone = "default" }: any) {
     info: "data-[active=true]:bg-info data-[active=true]:text-info-foreground data-[active=true]:border-info",
   };
   return (
-    <button type="button" onClick={onClick} data-active={active}
-      className={cn("h-10 px-4 rounded-full border bg-card text-sm font-medium transition-all hover:border-primary/40", tones[tone])}
-    >{children}</button>
+    <div className="relative group">
+      <button type="button" onClick={onClick} data-active={active}
+        className={cn("h-10 px-4 rounded-full border bg-card text-sm font-medium transition-all hover:border-primary/40", tones[tone])}
+      >
+        {children}
+      </button>
+      {onRemove && (
+        <button 
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-white grid place-items-center opacity-0 group-hover:opacity-100 transition shadow-sm"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </div>
   );
 }
 
 const ESTADO_TONE: Record<string, string> = { Excelente: "success", "Muito Bom": "success", Bom: "info", Regular: "warn", Ruim: "danger" };
 const AVARIA_TONE: Record<string, string> = { "Sem avarias": "success", Leve: "info", Moderado: "warn", Alto: "danger", Grave: "danger" };
 
-// Processa imagem respeitando orientação EXIF (crítico no Android, onde a foto vem rotacionada).
-// Gera 2 qualidades (alta + média) para fallback automático em caso de OCR vazio.
-const processImage = async (file: File, quality = 0.7, max = 1200): Promise<{ b64: string }> => {
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error("Tempo esgotado ao processar imagem.")), 10000);
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        clearTimeout(timeout);
-        const canvas = document.createElement("canvas");
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height && width > max) {
-          height = Math.round((height * max) / width);
-          width = max;
-        } else if (height > max) {
-          width = Math.round((width * max) / height);
-          height = max;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return reject(new Error("Canvas indisponível"));
-        
-        ctx.drawImage(img, 0, 0, width, height);
-        const b64 = canvas.toDataURL("image/jpeg", quality);
-        resolve({ b64 });
-      };
-      img.onerror = () => {
-        clearTimeout(timeout);
-        reject(new Error("Erro ao carregar imagem."));
-      };
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = () => {
-      clearTimeout(timeout);
-      reject(new Error("Erro ao ler arquivo."));
-    };
-    reader.readAsDataURL(file);
-  });
-};
-
-const PLACA_REGEX = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/;
-
 export default function NovaAvaliacao() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const fileRef = useRef<HTMLInputElement>(null);
-  const placaRef = useRef<HTMLInputElement>(null);
 
   const [empresa, setEmpresa] = useState<Empresa>("Ceolin");
   const { vendedores } = useVendedores(empresa);
@@ -118,124 +80,46 @@ export default function NovaAvaliacao() {
   const [historico, setHistorico] = useState<string[]>([]);
   const [opcionais, setOpcionais] = useState<string[]>([]);
   const [obs, setObs] = useState("");
-  const [tagsObs, setTagsObs] = useState<string[]>([]);
-  const [scanning, setScanning] = useState(false);
+  
   const [saving, setSaving] = useState(false);
   const [fipeOpen, setFipeOpen] = useState(false);
-  const [detectedPlate, setDetectedPlate] = useState<string | null>(null);
-  const [showPasteButton, setShowPasteButton] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [novoHist, setNovoHist] = useState("");
+  const [novoOp, setNovoOp] = useState("");
 
-  // 1. Snapshot de Segurança: Salva o estado antes da captura
-  const saveSnapshot = () => {
-    const snapshot = {
-      placa, marca, modelo, ano, km, fipe, custo, aval,
-      cliente, vendedor, origem, modalidade, chassi,
-      estado, nivel, historico, opcionais, tagsObs, obs, empresa,
-      timestamp: Date.now()
-    };
-    localStorage.setItem("nova_avaliacao_snapshot", JSON.stringify(snapshot));
-  };
-
-  // 2. Hydration: Restaura o estado ao carregar
+  // Hydration de rascunho temporário
   useEffect(() => {
-    const saved = localStorage.getItem("nova_avaliacao_snapshot");
+    const saved = localStorage.getItem("avaliacao_draft");
     if (saved) {
       try {
         const snap = JSON.parse(saved);
-        if (Date.now() - snap.timestamp < 600000) { // 10 min
+        if (Date.now() - snap.timestamp < 1800000) { // 30 min
           if (snap.placa) setPlaca(snap.placa);
           if (snap.marca) setMarca(snap.marca);
           if (snap.modelo) setModelo(snap.modelo);
-          if (snap.ano) setAno(snap.ano);
-          if (snap.km) setKm(snap.km);
-          if (snap.fipe) setFipe(snap.fipe);
-          if (snap.custo) setCusto(snap.custo);
-          if (snap.aval) setAval(snap.aval);
           if (snap.cliente) setCliente(snap.cliente);
-          if (snap.vendedor) setVendedor(snap.vendedor);
-          if (snap.origem) setOrigem(snap.origem);
-          if (snap.modalidade) setModalidade(snap.modalidade);
-          if (snap.chassi) setChassi(snap.chassi);
-          if (snap.estado) setEstado(snap.estado);
-          if (snap.nivel) setNivel(snap.nivel);
-          if (snap.historico) setHistorico(snap.historico);
-          if (snap.opcionais) setOpcionais(snap.opcionais);
-          if (snap.tagsObs) setTagsObs(snap.tagsObs);
-          if (snap.obs) setObs(snap.obs);
-          if (snap.empresa) setEmpresa(snap.empresa);
-          toast.info("Dados restaurados do rascunho anterior.");
+          // ... outros campos podem ser adicionados conforme necessidade
         }
-      } catch (e) { console.error("Falha ao restaurar snapshot", e); }
-      localStorage.removeItem("nova_avaliacao_snapshot");
+      } catch (e) {}
     }
   }, []);
+
+  // Persistência automática do rascunho
+  useEffect(() => {
+    if (placa || cliente || marca) {
+      const draft = { placa, marca, modelo, cliente, timestamp: Date.now() };
+      localStorage.setItem("avaliacao_draft", JSON.stringify(draft));
+    }
+  }, [placa, marca, modelo, cliente]);
 
   const toggle = (arr: string[], setArr: (v: string[]) => void, v: string) =>
     setArr(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
-  const onPickPhoto = () => {
-    saveSnapshot();
-    fileRef.current?.click();
+  const addCustom = (val: string, setVal: (v: string) => void, arr: string[], setArr: (v: string[]) => void) => {
+    if (!val.trim()) return;
+    if (!arr.includes(val.trim())) setArr([...arr, val.trim()]);
+    setVal("");
   };
-
-  const callOcr = async (b64: string): Promise<string> => {
-    const { data, error } = await withTimeout(
-      supabase.functions.invoke("ocr-placa", { body: { imageBase64: b64 } }),
-      20000
-    );
-    if (error) throw error;
-    const raw: string = (data?.placa || "").toString().toUpperCase().replace(/[^A-Z0-9]/g, "").trim();
-    return raw.slice(0, 7);
-  };
-
-  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (e.target) e.target.value = "";
-    if (!f) return;
-
-    setScanning(true);
-    const toastId = toast.loading("Lendo placa com IA...");
-
-    try {
-      const { b64: b64Hi } = await processImage(f, 0.88, 1600);
-      console.log("[OCR] Tentativa 1 (alta qualidade)...");
-      let detected = await callOcr(b64Hi);
-
-      if (!detected || detected.length < 7) {
-        console.log("[OCR] Resultado curto, retry com qualidade máxima...");
-        toast.loading("Reprocessando imagem...", { id: toastId });
-        const { b64: b64Max } = await processImage(f, 0.95, 1920);
-        detected = await callOcr(b64Max);
-      }
-
-      console.log("[OCR] Placa final:", detected);
-
-      if (detected && detected.length === 7) {
-        const formatted = detected.toUpperCase();
-        
-        // Preenchimento direto via React state — funcional em 100% dos dispositivos.
-        // Não depende de refs DOM que podem ficar nulos no Chrome mobile após câmera.
-        setPlaca(formatted);
-        setDetectedPlate(formatted);
-        setShowPasteButton(false);
-        setScanning(false);
-        
-        toast.success(`Placa detectada: ${formatted}`, { id: toastId });
-
-        // Abre FIPE automaticamente após um pequeno delay
-        setTimeout(() => setFipeOpen(true), 600);
-      } else {
-        setScanning(false);
-        toast.error("Não consegui ler a placa. Centralize-a, com boa iluminação, ou digite manualmente.", { id: toastId });
-      }
-    } catch (err: any) {
-      console.error("[OCR] Erro crítico:", err);
-      setScanning(false);
-      const msg = err?.message === "TIMEOUT_EXCEEDED" ? "O servidor demorou muito a responder" : "Falha na leitura da placa";
-      toast.error(msg, { id: toastId });
-    }
-  };
-
 
   const onResolveFipe = (d: { marca: string; modelo: string; versao?: string; ano: string; fipe: number }) => {
     if (d.marca && !marca) setMarca(d.marca);
@@ -246,9 +130,10 @@ export default function NovaAvaliacao() {
     setFipeOpen(false);
   };
 
-  const salvar = async (status: "Em Avaliação" | "Finalizada") => {
+  const salvar = async (status: "Em Avaliação" | "Avaliado") => {
     if (!user) return toast.error("Sessão expirada");
     if (!placa.trim()) return toast.warning("Placa é obrigatória");
+    
     setSaving(true);
     const { error } = await supabase.from("avaliacoes").insert({
       empresa, 
@@ -256,25 +141,37 @@ export default function NovaAvaliacao() {
       chassi: chassi || null,
       cliente: cliente || null, 
       modalidade, 
-      // Envia data como YYYY-MM-DD puro — a coluna é tipo `date`, não `timestamptz`
       data_avaliacao: data,
       marca, modelo, ano, km: km ? Number(km) : null,
       fipe: fipe || null, custo: custo || null, avaliacao: aval || null,
-      vendedor, origem: (origem as any) || null, status,
+      vendedor, origem: (origem as any) || null,
+      status, // Camada 1
+      status_negociacao: "Sem definição", // Camada 2 inicial
       estado_geral: estado || null, nivel_avarias: nivel || null,
       historico, opcionais,
-      tags_obs: tagsObs, observacoes: obs || null,
+      observacoes: obs || null,
       created_by: user.id, updated_by: user.id,
     });
+    
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success(status === "Finalizada" ? "Avaliação finalizada" : "Rascunho salvo");
+    
+    localStorage.removeItem("avaliacao_draft");
+    toast.success(status === "Avaliado" ? "Avaliação concluída" : "Rascunho salvo");
     navigate("/avaliacoes");
   };
 
   return (
     <div className="space-y-5 pb-12">
-      <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={handlePhoto} />
+      <PlateCamera 
+        open={cameraOpen} 
+        onClose={() => setCameraOpen(false)} 
+        onDetect={(p) => {
+          setPlaca(p);
+          setCameraOpen(false);
+          setTimeout(() => setFipeOpen(true), 400);
+        }} 
+      />
 
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span>Avaliações</span><ChevronRight className="h-3 w-3" /><span className="text-foreground font-medium">Nova</span>
@@ -283,14 +180,14 @@ export default function NovaAvaliacao() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-bold">Nova Avaliação</h1>
-          <p className="text-muted-foreground text-sm mt-1">Digite ou fotografe a placa. Selecione o veículo na FIPE para preencher automaticamente.</p>
+          <p className="text-muted-foreground text-sm mt-1">Capture a placa em tempo real para iniciar o processo.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => salvar("Em Avaliação")} disabled={saving}>
             <Save className="h-4 w-4 mr-2" /> Salvar rascunho
           </Button>
-          <Button onClick={() => salvar("Finalizada")} disabled={saving} className="bg-gradient-primary text-primary-foreground shadow-glow">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />} Finalizar
+          <Button onClick={() => salvar("Avaliado")} disabled={saving} className="bg-gradient-primary text-primary-foreground shadow-glow">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />} Concluir Avaliação
           </Button>
         </div>
       </div>
@@ -298,13 +195,12 @@ export default function NovaAvaliacao() {
       <Card className="overflow-hidden border-primary/20">
         <div className="bg-gradient-hero text-white p-5 md:p-6">
           <div className="flex items-center gap-2 text-xs uppercase tracking-widest opacity-80">
-            <Sparkles className="h-3 w-3" /> Placa via OCR · Veículo via FIPE.Online
+            <Sparkles className="h-3 w-3" /> Câmera Profissional · OCR Real-time
           </div>
           <div className="mt-2 grid md:grid-cols-[1fr_auto] gap-4 items-end">
             <div>
               <Label className="text-white/80">Placa</Label>
               <Input
-                ref={placaRef}
                 value={placa}
                 onChange={(e) => setPlaca(e.target.value.toUpperCase())}
                 placeholder="ABC1D23"
@@ -312,15 +208,14 @@ export default function NovaAvaliacao() {
               />
             </div>
             <div className="flex gap-2">
-              <Button size="lg" variant="secondary" onClick={onPickPhoto} disabled={scanning} className="h-14">
-                {scanning ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Camera className="h-5 w-5 mr-2" />} Foto
+              <Button size="lg" variant="secondary" onClick={() => setCameraOpen(true)} className="h-14 min-w-[120px]">
+                <Camera className="h-5 w-5 mr-2" /> Abrir Câmera
               </Button>
               <Button size="lg" onClick={() => setFipeOpen(true)} className="h-14 bg-primary hover:bg-primary/90">
                 <ScanLine className="h-5 w-5 mr-2" /> FIPE
               </Button>
             </div>
           </div>
-          <p className="mt-3 text-xs text-white/60">A foto identifica apenas a placa. Os dados do veículo (marca, modelo, ano, FIPE) são selecionados manualmente via FIPE.Online.</p>
         </div>
 
         <CardContent className="p-5 md:p-6 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -351,29 +246,18 @@ export default function NovaAvaliacao() {
           <div>
             <Label>FIPE</Label>
             <Input type="number" value={fipe || ""} onChange={(e) => setFipe(+e.target.value)} className="mt-1.5 font-mono" />
-            {fipe > 0 && <div className="text-xs text-muted-foreground mt-1">{moeda(fipe)}</div>}
           </div>
           <div>
             <Label>Custo estimado</Label>
             <Input type="number" value={custo || ""} onChange={(e) => setCusto(+e.target.value)} className="mt-1.5 font-mono" />
-            {custo > 0 && <div className="text-xs text-muted-foreground mt-1">{moeda(custo)}</div>}
           </div>
           <div>
-            <Label className="text-primary">Avaliação de compra</Label>
-            <Input type="number" value={aval || ""} onChange={(e) => setAval(+e.target.value)} className="mt-1.5 font-mono border-primary/40 focus-visible:ring-primary" />
+            <Label className="text-primary font-bold">Valor Avaliação</Label>
+            <Input type="number" value={aval || ""} onChange={(e) => setAval(+e.target.value)} className="mt-1.5 font-mono border-primary/40 focus-visible:ring-primary h-11 text-lg" />
             {aval > 0 && <div className="text-xs font-semibold text-primary mt-1">{moeda(aval)}</div>}
           </div>
         </CardContent>
       </Card>
-
-      <Dialog open={fipeOpen} onOpenChange={setFipeOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle className="font-display">Buscar FIPE — seleção encadeada</DialogTitle>
-          </DialogHeader>
-          <FipePicker initialMarca={marca} initialModelo={modelo} initialAno={ano} onResolve={onResolveFipe} />
-        </DialogContent>
-      </Dialog>
 
       <div className="grid md:grid-cols-3 gap-4">
         <Card>
@@ -422,53 +306,60 @@ export default function NovaAvaliacao() {
       <div className="grid lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><FileCheck2 className="h-4 w-4" /> Histórico do veículo</CardTitle></CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            {HISTORICO_OPCOES.map((h) => <Chip key={h} active={historico.includes(h)} onClick={() => toggle(historico, setHistorico, h)} tone="success">{h}</Chip>)}
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {HISTORICO_OPCOES.map((h) => (
+                <Chip key={h} active={historico.includes(h)} onClick={() => toggle(historico, setHistorico, h)} tone="success">{h}</Chip>
+              ))}
+              {historico.filter(h => !HISTORICO_OPCOES.includes(h)).map(h => (
+                <Chip key={h} active={true} onClick={() => toggle(historico, setHistorico, h)} tone="info" onRemove={() => toggle(historico, setHistorico, h)}>{h}</Chip>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input value={novoHist} onChange={(e) => setNovoHist(e.target.value)} placeholder="Adicionar outro item..." className="h-9" onKeyDown={(e) => e.key === "Enter" && addCustom(novoHist, setNovoHist, historico, setHistorico)} />
+              <Button size="sm" variant="outline" onClick={() => addCustom(novoHist, setNovoHist, historico, setHistorico)}><Plus className="h-4 w-4" /></Button>
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Wrench className="h-4 w-4" /> Opcionais</CardTitle></CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            {OPCIONAIS.map((o) => <Chip key={o} active={opcionais.includes(o)} onClick={() => toggle(opcionais, setOpcionais, o)}>{o}</Chip>)}
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {OPCIONAIS.map((o) => (
+                <Chip key={o} active={opcionais.includes(o)} onClick={() => toggle(opcionais, setOpcionais, o)}>{o}</Chip>
+              ))}
+              {opcionais.filter(o => !OPCIONAIS.includes(o)).map(o => (
+                <Chip key={o} active={true} onClick={() => toggle(opcionais, setOpcionais, o)} tone="info" onRemove={() => toggle(opcionais, setOpcionais, o)}>{o}</Chip>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input value={novoOp} onChange={(e) => setNovoOp(e.target.value)} placeholder="Outro opcional..." className="h-9" onKeyDown={(e) => e.key === "Enter" && addCustom(novoOp, setNovoOp, opcionais, setOpcionais)} />
+              <Button size="sm" variant="outline" onClick={() => addCustom(novoOp, setNovoOp, opcionais, setOpcionais)}><Plus className="h-4 w-4" /></Button>
+            </div>
           </CardContent>
         </Card>
       </div>
 
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><ImagePlus className="h-4 w-4" /> Fotos & anexos</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-sm">Observações Técnicas</CardTitle></CardHeader>
         <CardContent>
-          <div className="text-xs text-muted-foreground">Upload de fotos será habilitado após salvar a avaliação.</div>
+          <Textarea 
+            value={obs} 
+            onChange={(e) => setObs(e.target.value)} 
+            rows={6} 
+            placeholder="Campo livre para observações, detalhes de pintura, funilaria, pneus, etc..." 
+            className="text-base"
+          />
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">Observações</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Tags rápidas</Label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {TAGS_OBS.map((t) => <Chip key={t} active={tagsObs.includes(t)} onClick={() => toggle(tagsObs, setTagsObs, t)} tone="warn">{t}</Chip>)}
-            </div>
-          </div>
-          <Textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={4} placeholder="Notas livres do avaliador…" />
-        </CardContent>
-      </Card>
-
-      {/* Fallback Visual: Botão Flutuante */}
-      {showPasteButton && detectedPlate && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom duration-500">
-          <Button 
-            onClick={() => {
-              setPlaca(detectedPlate);
-              setShowPasteButton(false);
-              toast.success("Placa colada com sucesso!");
-            }}
-            className="bg-[#CE2B37] text-white shadow-2xl h-14 px-8 rounded-full border-2 border-white gap-2 font-bold uppercase tracking-widest text-xs"
-          >
-            <Sparkles className="h-4 w-4" /> Colar Placa Detectada: {detectedPlate}
-          </Button>
-        </div>
-      )}
+      <Dialog open={fipeOpen} onOpenChange={setFipeOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>Buscar FIPE</DialogTitle></DialogHeader>
+          <FipePicker initialMarca={marca} initialModelo={modelo} initialAno={ano} onResolve={onResolveFipe} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
