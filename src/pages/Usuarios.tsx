@@ -367,10 +367,10 @@ export default function Usuarios() {
         </Card>
 
         <Card className="md:col-span-2 overflow-hidden border-none shadow-md">
-          <CardHeader className="bg-slate-50/50 border-b py-3 px-6">
+          <CardHeader className="bg-muted/50 border-b py-3 px-6">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold">Colaboradores ({filtered.length})</CardTitle>
-              <Badge variant="outline" className="bg-white">{rows.length} total</Badge>
+              <Badge variant="outline" className="bg-background">{rows.length} total</Badge>
             </div>
           </CardHeader>
           <CardContent className="p-0">

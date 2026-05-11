@@ -22,7 +22,7 @@ export default function Comprados() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data } = await supabase.from("avaliacoes").select("*").eq("status", "Comprado").order("updated_at", { ascending: false });
+      const { data } = await supabase.from("avaliacoes").select("*").eq("status_negociacao", "Comprado").order("updated_at", { ascending: false });
       setRows(data || []);
       setLoading(false);
     })();

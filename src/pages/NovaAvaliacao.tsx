@@ -150,7 +150,9 @@ export default function NovaAvaliacao() {
       estado_geral: estado || null, nivel_avarias: nivel || null,
       historico, opcionais,
       observacoes: obs || null,
-      created_by: user.id, updated_by: user.id,
+      created_by: user.id, 
+      updated_by: user.id,
+      created_by_name: user.user_metadata?.full_name || user.email,
     });
     
     setSaving(false);

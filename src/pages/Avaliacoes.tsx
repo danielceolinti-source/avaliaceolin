@@ -25,6 +25,7 @@ export default function Avaliacoes() {
   const [loading, setLoading] = useState(true);
   const [ano, setAno] = useState(2026);
   const [mes, setMes] = useState<number | "todos">(new Date().getMonth() + 1);
+  const [avaliador, setAvaliador] = useState("todos");
 
   useEffect(() => {
     (async () => {
@@ -34,6 +35,8 @@ export default function Avaliacoes() {
       setLoading(false);
     })();
   }, []);
+
+  const listaAvaliadores = useMemo(() => Array.from(new Set(rows.map(r => r.created_by_name).filter(Boolean))).sort(), [rows]);
 
   // Contadores por mês
   const contadores = useMemo(() => {
@@ -48,7 +51,8 @@ export default function Avaliacoes() {
     }
     return c;
   }, [rows, ano]);
-  const data = useMemo(() => rows.filter((a) => {
+
+  const data = useMemo(() => rows.filter((a) => {
     if (empresaFiltro !== "Todas" && a.empresa !== empresaFiltro) return false;
     
     // Filtro inteligente para ambas as camadas de status
@@ -56,6 +60,8 @@ export default function Avaliacoes() {
       const match = a.status === status || a.status_negociacao === status;
       if (!match) return false;
     }
+
+    if (avaliador !== "todos" && a.created_by_name !== avaliador) return false;
     
     const d = a.data_avaliacao || a.created_at;
     if (d) {
@@ -65,10 +71,10 @@ export default function Avaliacoes() {
     }
     if (q) {
       const t = q.toLowerCase();
-      return [a.placa, a.modelo, a.marca, a.vendedor, a.chassi, a.cliente].some((v) => v?.toLowerCase().includes(t));
+      return [a.placa, a.modelo, a.marca, a.vendedor, a.chassi, a.cliente, a.created_by_name].some((v) => v?.toLowerCase().includes(t));
     }
     return true;
-  }), [rows, empresaFiltro, q, status, ano, mes]);
+  }), [rows, empresaFiltro, q, status, ano, mes, avaliador]);
 
   const hojeCount = useMemo(() => {
     const hojeString = hojeBR();
@@ -96,6 +102,7 @@ export default function Avaliacoes() {
           <Button variant="outline" disabled={!data.length} onClick={() => {
             const csv = toCSV(data.map((a) => ({
               numero: a.numero, data: dataBR(a.data_avaliacao || a.created_at), empresa: a.empresa,
+              avaliador: a.created_by_name || "—",
               vendedor: a.vendedor, cliente: a.cliente, modalidade: a.modalidade, placa: a.placa,
               marca: a.marca, modelo: a.modelo, versao: a.versao, ano: a.ano, km: a.km,
               fipe: a.fipe, custo: a.custo, avaliacao: a.avaliacao, 
@@ -159,10 +166,17 @@ export default function Avaliacoes() {
         <CardContent className="p-3 flex flex-col md:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Placa, cliente, modelo, vendedor…" className="pl-9" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Placa, cliente, modelo, avaliador…" className="pl-9" />
           </div>
+          <Select value={avaliador} onValueChange={setAvaliador}>
+            <SelectTrigger className="md:w-[200px]"><UserIcon className="h-4 w-4 mr-2" /><SelectValue placeholder="Avaliador" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos avaliadores</SelectItem>
+              {listaAvaliadores.map(av => <SelectItem key={av} value={av}>{av}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <Select value={status} onValueChange={(v) => setStatus(v as any)}>
-            <SelectTrigger className="md:w-[220px]"><Filter className="h-4 w-4 mr-2" /><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectTrigger className="md:w-[200px]"><Filter className="h-4 w-4 mr-2" /><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos status</SelectItem>
               <optgroup label="Avaliação">
@@ -201,15 +215,15 @@ export default function Avaliacoes() {
                 <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="text-left px-4 py-3">Data</th>
+                    <th className="text-left px-4 py-3">Avaliador</th>
                     <th className="text-left px-4 py-3">Vendedor</th>
-                    <th className="text-left px-4 py-3 hidden md:table-cell">Cliente</th>
                     <th className="text-left px-4 py-3">Veículo</th>
                     <th className="text-left px-4 py-3">Placa</th>
-                    <th className="text-right px-4 py-3 hidden md:table-cell">FIPE</th>
-                    <th className="text-right px-4 py-3 hidden md:table-cell">Custo</th>
                     <th className="text-right px-4 py-3">Avaliação</th>
                     <th className="text-left px-4 py-3">Status</th>
                   </tr>
+                </thead>
+/tr>
                 </thead>
                 <tbody>
                   {data.map((a) => {
@@ -217,15 +231,13 @@ export default function Avaliacoes() {
                     return (
                       <tr key={a.id} onClick={() => navigate(`/avaliacoes/${a.id}`)} className="group border-t hover:bg-muted/40 cursor-pointer transition-premium">
                         <td className="px-4 py-3 whitespace-nowrap text-[11px] font-medium text-muted-foreground/80">{dataBR(d)}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-xs font-semibold text-primary">{a.created_by_name || "—"}</td>
                         <td className="px-4 py-3 whitespace-nowrap font-medium">{a.vendedor || "—"}</td>
-                        <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">{a.cliente || "—"}</td>
                         <td className="px-4 py-3">
                           <div className="font-bold group-hover:text-primary transition-colors">{a.marca} {a.modelo}</div>
                           <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">{a.ano} {a.km ? `• ${a.km.toLocaleString("pt-BR")} km` : ""}</div>
                         </td>
                         <td className="px-4 py-3 font-mono font-bold tracking-tighter text-base">{a.placa}</td>
-                        <td className="px-4 py-3 text-right font-mono text-xs hidden md:table-cell text-muted-foreground">{moeda(a.fipe)}</td>
-                        <td className="px-4 py-3 text-right font-mono text-xs hidden md:table-cell text-muted-foreground">{moeda(a.custo)}</td>
                         <td className="px-4 py-3 text-right font-mono font-bold text-primary">{moeda(a.avaliacao)}</td>
                         <td className="px-4 py-3">
                           <div className="flex flex-col gap-1">

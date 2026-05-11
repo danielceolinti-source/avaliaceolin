@@ -383,6 +383,26 @@ export default function AvaliacaoDetalhe() {
         </div>
 
         <div className="space-y-4">
+          <Card className="bg-gradient-primary text-primary-foreground border-none shadow-glow">
+            <CardHeader className="pb-2 flex flex-row items-center gap-2">
+              <UserIcon className="h-4 w-4 opacity-80" />
+              <CardTitle className="text-xs uppercase tracking-widest opacity-80">Avaliador Responsável</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-white/20 grid place-items-center font-bold text-lg overflow-hidden border border-white/30">
+                {perfilAvaliador?.avatar_url ? (
+                  <img src={perfilAvaliador.avatar_url} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  (perfilAvaliador?.full_name || aval.created_by_name || "?")[0].toUpperCase()
+                )}
+              </div>
+              <div>
+                <div className="font-bold">{perfilAvaliador?.full_name || aval.created_by_name || "Não identificado"}</div>
+                <div className="text-[10px] opacity-70">Avaliação Técnica realizada em {dataBR(aval.created_at)}</div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="bg-muted/30">
             <CardHeader className="pb-2 flex flex-row items-center gap-2"><History className="h-4 w-4 text-muted-foreground" /><CardTitle className="text-sm">Histórico de Alterações</CardTitle></CardHeader>
             <CardContent className="space-y-4 max-h-[400px] overflow-y-auto pr-2">

@@ -205,8 +205,8 @@ export default function Dashboard() {
           <Card className="border-l-4 border-[#231F20] glass hover:shadow-md transition-premium group">
             <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest opacity-70">Viva Motors</p>
-                <h3 className="text-2xl font-bold mt-1 text-[#231F20] group-hover:scale-105 origin-left transition-transform">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest opacity-70">Viva Automóveis</p>
+                <h3 className="text-2xl font-bold mt-1 text-foreground group-hover:scale-105 origin-left transition-transform">
                   {data.filter(a => a.empresa === 'Viva').length} 
                   <span className="text-sm font-medium text-muted-foreground ml-2 tracking-normal">avaliações</span>
                 </h3>
@@ -247,11 +247,9 @@ export default function Dashboard() {
                     <th className="text-left px-3 py-2">Data</th>
                     <th className="text-left px-3 py-2">Veículo</th>
                     <th className="text-left px-3 py-2">Placa</th>
+                    <th className="text-left px-3 py-2 hidden md:table-cell">Avaliador</th>
                     <th className="text-left px-3 py-2 hidden md:table-cell">Vendedor</th>
-                    <th className="text-left px-3 py-2 hidden lg:table-cell">Cliente</th>
-                    <th className="text-left px-3 py-2 hidden lg:table-cell">Origem</th>
-                    <th className="text-left px-3 py-2 hidden md:table-cell">Empresa</th>
-                    <th className="text-right px-3 py-2 hidden md:table-cell">FIPE</th>
+                    <th className="text-left px-3 py-2 hidden lg:table-cell">Empresa</th>
                     <th className="text-right px-3 py-2">Avaliação</th>
                     <th className="text-left px-3 py-2">Status</th>
                   </tr>
@@ -262,15 +260,13 @@ export default function Dashboard() {
                       <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{dataBR(a.data_avaliacao || a.created_at)}</td>
                       <td className="px-3 py-2.5"><div className="font-medium truncate max-w-[180px]">{a.marca} {a.modelo}</div><div className="text-xs text-muted-foreground">{a.ano}</div></td>
                       <td className="px-3 py-2.5 font-mono text-xs">{a.placa}</td>
-                      <td className="px-3 py-2.5 hidden md:table-cell">{a.vendedor || "—"}</td>
-                      <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground">{a.cliente || "—"}</td>
-                      <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground">{a.origem || "—"}</td>
-                      <td className="px-3 py-2.5 hidden md:table-cell text-xs">{a.empresa}</td>
-                      <td className="px-3 py-2.5 text-right font-mono hidden md:table-cell text-muted-foreground">{moeda(a.fipe || 0)}</td>
+                      <td className="px-3 py-2.5 hidden md:table-cell text-xs font-semibold text-primary truncate max-w-[100px]">{a.created_by_name || "—"}</td>
+                      <td className="px-3 py-2.5 hidden md:table-cell truncate max-w-[100px]">{a.vendedor || "—"}</td>
+                      <td className="px-3 py-2.5 hidden lg:table-cell text-xs">{a.empresa}</td>
                       <td className="px-3 py-2.5 text-right font-mono font-semibold">{moeda(a.avaliacao || 0)}</td>
                       <td className="px-3 py-2.5">
-                        <Badge variant="outline" className={a.tags_obs?.includes("VIRTUAL_STATUS_AVALIADO") ? "bg-info/10 text-info border-info/30" : STATUS_COLORS[a.status as Status]}>
-                          {a.tags_obs?.includes("VIRTUAL_STATUS_AVALIADO") ? "Avaliado" : a.status}
+                        <Badge variant="outline" className={cn("text-[10px] font-bold border-none shadow-sm", STATUS_COLORS[a.status as Status])}>
+                          {a.status}
                         </Badge>
                       </td>
                     </tr>

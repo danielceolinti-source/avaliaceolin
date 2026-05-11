@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Download, Loader2, TrendingUp, ShoppingCart, XCircle, Wallet, Percent, BarChart3 } from "lucide-react";
+import { Download, Loader2, TrendingUp, ShoppingCart, XCircle, Wallet, Percent, BarChart3, Settings } from "lucide-react";
 import { useApp } from "@/store/app";
 import { dataBR, moedaBR as moeda, parseDate } from "@/lib/format";
 import { downloadCSV, toCSV } from "@/lib/csv";
@@ -15,6 +15,15 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--success))", "hsl(var(--warning))", "hsl(var(--info))", "hsl(var(--destructive))", "hsl(var(--accent))"];
 const ORIGENS = ["Showroom", "Online", "Indicação", "Frotista", "Outros"];
@@ -29,6 +38,13 @@ export default function Relatorios() {
   const [vendedor, setVendedor] = useState<string>("todos");
   const [avaliador, setAvaliador] = useState<string>("todos");
   const [origem, setOrigem] = useState<string>("todos");
+  
+  // Personalização do Relatório
+  const [showKPIs, setShowKPIs] = useState(() => JSON.parse(localStorage.getItem("rel_show_kpis") || '{"investido": true, "conversao": true, "graficos": true}'));
+
+  useEffect(() => {
+    localStorage.setItem("rel_show_kpis", JSON.stringify(showKPIs));
+  }, [showKPIs]);
 
   useEffect(() => {
     (async () => {
@@ -130,8 +146,8 @@ export default function Relatorios() {
     doc.setFont("helvetica", "normal");
     doc.text("RELATÓRIO OPERACIONAL DE AVALIAÇÕES", 15, 30);
     
-    const periodo = mes === "todos" ? `${ano}` : `${MESES[mes-1].nome} / ${ano}`;
-    doc.text(`PERÍODO: ${periodo}`, pageWidth - 15, 20, { align: "right" });
+    const periodoCompleto = mes === "todos" ? `Ano de ${ano}` : `${MESES[mes-1].nome} de ${ano}`;
+    doc.text(`RELATÓRIO: ${periodoCompleto}`, pageWidth - 15, 20, { align: "right" });
     doc.text(`EMPRESA: ${empresaFiltro.toUpperCase()}`, pageWidth - 15, 30, { align: "right" });
 
     // KPIs Row
@@ -140,16 +156,16 @@ export default function Relatorios() {
     doc.setFont("helvetica", "bold");
     doc.text("RESUMO DO PERÍODO", 15, 55);
     
+    const kpiHead = ["Avaliações", "Comprados"];
+    const kpiBody = [total.toString(), comprados.length.toString()];
+    
+    if (showKPIs.conversao) { kpiHead.push("Conversão"); kpiBody.push(`${conversao}%`); }
+    if (showKPIs.investido) { kpiHead.push("Total Investido"); kpiBody.push(moeda(investido)); }
+
     autoTable(doc, {
       startY: 60,
-      head: [["Avaliações", "Comprados", "Conversão", "Total Investido", "Economia FIPE"]],
-      body: [[
-        total.toString(),
-        comprados.length.toString(),
-        `${conversao}%`,
-        moeda(investido),
-        moeda(economia)
-      ]],
+      head: [kpiHead],
+      body: [kpiBody],
       theme: "grid",
       headStyles: { fillColor: [71, 85, 105], fontSize: 8 },
       styles: { fontSize: 10, halign: "center" }
@@ -161,24 +177,23 @@ export default function Relatorios() {
 
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 20,
-      head: [["Data", "Veículo", "Placa", "Vendedor", "Avaliação", "Status Aval.", "Status Negoc."]],
+      head: [["Data", "Veículo", "Placa", "Avaliador", "Vendedor", "Avaliação", "Status Negoc."]],
       body: filtrado.map(a => [
         dataBR(a.data_avaliacao || a.created_at),
         `${a.marca} ${a.modelo}`,
         a.placa,
+        a.created_by_name || "Não identificado",
         a.vendedor || "—",
         moeda(a.avaliacao),
-        a.status,
-        a.status_negociacao
+        a.status_negociacao !== "Sem definição" ? a.status_negociacao : a.status
       ]),
-      headStyles: { fillColor: [31, 41, 55], fontSize: 8 },
+      theme: "striped",
+      headStyles: { fillColor: [31, 41, 55], fontSize: 7 },
       styles: { fontSize: 7 },
-      columnStyles: {
-        4: { halign: "right" }
-      }
+      margin: { left: 15, right: 15 }
     });
 
-    doc.save(`relatorio-ceolin-${periodo.replace(/\s/g, "")}.pdf`);
+    doc.save(`relatorio-viva-${periodoCompleto.replace(/\s/g, "-")}.pdf`);
     toast.success("PDF gerado com sucesso");
   };
 
@@ -188,6 +203,7 @@ export default function Relatorios() {
         numero: a.numero,
         data: dataBR(a.data_avaliacao || a.created_at),
         empresa: a.empresa,
+        avaliador: a.created_by_name || "Não identificado",
         vendedor: a.vendedor,
         cliente: a.cliente,
         modalidade: a.modalidade,
@@ -215,9 +231,34 @@ export default function Relatorios() {
         <div>
           <div className="text-xs uppercase tracking-widest text-muted-foreground">Análises</div>
           <h1 className="font-display text-3xl md:text-4xl font-bold">Relatórios</h1>
-          <p className="text-muted-foreground text-sm mt-1">Indicadores, conversão, ticket médio e exportações.</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            Relatório referente a {mes === "todos" ? `ano de ${ano}` : `${MESES[mes-1].nome} de ${ano}`}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline"><Settings className="h-4 w-4 mr-2" /> Personalizar</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuLabel>Exibir no Relatório</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="p-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Total Investido</span>
+                  <Switch checked={showKPIs.investido} onCheckedChange={(v) => setShowKPIs({...showKPIs, investido: v})} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Conversão</span>
+                  <Switch checked={showKPIs.conversao} onCheckedChange={(v) => setShowKPIs({...showKPIs, conversao: v})} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Gráficos</span>
+                  <Switch checked={showKPIs.graficos} onCheckedChange={(v) => setShowKPIs({...showKPIs, graficos: v})} />
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="outline" onClick={exportarCSV} disabled={!filtrado.length}>
             <Download className="h-4 w-4 mr-2" /> Excel
           </Button>
@@ -282,51 +323,51 @@ export default function Relatorios() {
       </Card>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Kpi icon={BarChart3} label="Avaliações" value={String(total)} />
+        {showKPIs.conversao && <Kpi icon={Percent} label="Conversão" value={`${conversao}%`} tone="primary" />}
+        {showKPIs.investido && <Kpi icon={Wallet} label="Investido" value={moeda(investido)} />}
         <Kpi icon={ShoppingCart} label="Comprados" value={String(comprados.length)} tone="success" />
-        <Kpi icon={XCircle} label="Não comprados" value={String(naoComprados)} tone="destructive" />
-        <Kpi icon={Percent} label="Conversão" value={`${conversao}%`} tone="primary" />
-        <Kpi icon={Wallet} label="Investido" value={moeda(investido)} />
-        <Kpi icon={TrendingUp} label="Economia FIPE" value={moeda(economia)} tone="success" />
       </div>
 
       {/* Charts */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2"><CardTitle className="text-base">Volume por mês</CardTitle></CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer>
-              <BarChart data={porMes}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="mes" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }} />
-                <Legend />
-                <Bar dataKey="total" name="Avaliações" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="comprados" name="Comprados" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">Status (Principal)</CardTitle></CardHeader>
-          <CardContent className="h-72">
-            {porStatus.length ? (
+      {showKPIs.graficos && (
+        <div className="grid lg:grid-cols-3 gap-4">
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-2"><CardTitle className="text-base">Volume por mês</CardTitle></CardHeader>
+            <CardContent className="h-72">
               <ResponsiveContainer>
-                <PieChart>
-                  <Pie data={porStatus} dataKey="value" nameKey="name" innerRadius={45} outerRadius={85} paddingAngle={2}>
-                    {porStatus.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
+                <BarChart data={porMes}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="mes" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                   <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }} />
                   <Legend />
-                </PieChart>
+                  <Bar dataKey="total" name="Avaliações" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="comprados" name="Comprados" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
-            ) : <div className="grid place-items-center h-full text-sm text-muted-foreground">Sem dados</div>}
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-base">Status (Principal)</CardTitle></CardHeader>
+            <CardContent className="h-72">
+              {porStatus.length ? (
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie data={porStatus} dataKey="value" nameKey="name" innerRadius={45} outerRadius={85} paddingAngle={2}>
+                      {porStatus.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : <div className="grid place-items-center h-full text-sm text-muted-foreground">Sem dados</div>}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Ranking vendedores */}
       <Card>

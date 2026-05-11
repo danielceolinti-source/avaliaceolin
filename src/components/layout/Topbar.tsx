@@ -43,7 +43,7 @@ export function Topbar() {
             setTheme(v === "Viva" ? "viva" : "fiat");
           }}
         >
-          <SelectTrigger className="h-9 w-[130px] md:w-[170px] bg-white border-primary/20">
+          <SelectTrigger className="h-9 w-[130px] md:w-[180px] bg-background/50 border-primary/20 hover:bg-accent transition-colors">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
