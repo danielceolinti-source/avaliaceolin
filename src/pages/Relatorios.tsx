@@ -146,7 +146,8 @@ export default function Relatorios() {
     doc.setFont("helvetica", "normal");
     doc.text("RELATÓRIO OPERACIONAL DE AVALIAÇÕES", 15, 30);
     
-    const periodoCompleto = mes === "todos" ? `Ano de ${ano}` : `${MESES[mes-1].nome} de ${ano}`;
+    const nomeMesAtual = MESES[new Date().getMonth()].nome;
+    const periodoCompleto = mes === "todos" ? `${nomeMesAtual} de ${ano}` : `${MESES[mes-1].nome} de ${ano}`;
     doc.text(`RELATÓRIO: ${periodoCompleto}`, pageWidth - 15, 20, { align: "right" });
     doc.text(`EMPRESA: ${empresaFiltro.toUpperCase()}`, pageWidth - 15, 30, { align: "right" });
 
