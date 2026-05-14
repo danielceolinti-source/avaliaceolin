@@ -55,6 +55,7 @@ const ROLES: { id: AppRole; label: string; tone: string; icon: any }[] = [
   { id: "ti", label: "T.I.", tone: "bg-info/15 text-info border-info/30", icon: ShieldCheck },
   { id: "gestor", label: "Gestor", tone: "bg-warning/15 text-warning border-warning/30", icon: Shield },
   { id: "avaliador", label: "Avaliador", tone: "bg-muted text-foreground border-border", icon: UserIcon },
+  { id: "vendedor", label: "Vendedor", tone: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30", icon: UserIcon },
 ];
 
 const EMPRESAS = ["Ceolin", "Viva"];
