@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import {
   Camera, ScanLine, Sparkles, Save, Send, ChevronRight,
   Wrench, FileCheck2, Loader2, User, Calendar, Plus, X,
+  ImagePlus, Trash2,
 } from "lucide-react";
 import {
   EMPRESAS, ESTADO_GERAL, HISTORICO_OPCOES, NIVEL_AVARIAS,
