@@ -60,7 +60,8 @@ const AVARIA_TONE: Record<string, string> = { "Sem avarias": "success", Leve: "i
 export default function NovaAvaliacao() {
   const { user } = useAuth();
   const navigate = useNavigate();
-
+  const { id: editId } = useParams<{ id: string }>();
+  const isEditMode = !!editId;
   const [empresa, setEmpresa] = useState<Empresa>("Ceolin");
   const { vendedores } = useVendedores(empresa);
   const [data, setData] = useState(hojeBR());
