@@ -169,13 +169,18 @@ export default function Usuarios() {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    
+
     try {
+      if (form.role === "vendedor" && !form.vendedor_id) {
+        toast.error("Selecione o vendedor a vincular");
+        setBusy(false);
+        return;
+      }
+
       const email = `${form.username}@avaliaceolin.sistema`;
-      
-      // Chamada para Edge Function que usa service role
-      const { data, error } = await supabase.functions.invoke("admin-user-management", {
-        body: { 
+
+      const { error } = await supabase.functions.invoke("admin-user-management", {
+        body: {
           action: "create",
           userData: {
             email,
@@ -183,7 +188,8 @@ export default function Usuarios() {
             full_name: form.fullName,
             phone: form.phone,
             role: form.role,
-            empresa: form.empresa
+            empresa: form.empresa,
+            vendedor_id: form.role === "vendedor" ? form.vendedor_id : null,
           }
         }
       });
@@ -208,21 +214,33 @@ export default function Usuarios() {
     setBusy(true);
 
     try {
+      if (form.role === "vendedor" && !form.vendedor_id) {
+        toast.error("Selecione o vendedor a vincular");
+        setBusy(false);
+        return;
+      }
+
       const { error: pError } = await supabase
         .from("profiles")
-        .update({ 
-          full_name: form.fullName, 
-          phone: form.phone, 
-          empresa: form.empresa 
+        .update({
+          full_name: form.fullName,
+          phone: form.phone,
+          empresa: form.empresa
         })
         .eq("user_id", editingUser.user_id);
 
       if (pError) throw pError;
 
-      // Update role if changed
-      if (!editingUser.roles.includes(form.role)) {
+      // Sincroniza role + vínculo
+      const roleChanged = !editingUser.roles.includes(form.role);
+      const vendChanged = (editingUser.vendedor_id || null) !== (form.role === "vendedor" ? form.vendedor_id : null);
+      if (roleChanged || vendChanged) {
         await supabase.from("user_roles").delete().eq("user_id", editingUser.user_id);
-        await supabase.from("user_roles").insert({ user_id: editingUser.user_id, role: form.role });
+        await (supabase.from("user_roles") as any).insert({
+          user_id: editingUser.user_id,
+          role: form.role,
+          vendedor_id: form.role === "vendedor" ? form.vendedor_id : null,
+        });
       }
 
       await createLog("UPDATE_USER", editingUser.user_id, editingUser, form);
