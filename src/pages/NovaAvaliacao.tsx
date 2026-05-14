@@ -267,6 +267,13 @@ export default function NovaAvaliacao() {
         }} 
       />
 
+      <InlineCamera
+        open={fotoCameraOpen}
+        onClose={() => setFotoCameraOpen(false)}
+        onCapture={async (files) => { await uploadFotos(files); }}
+        multi
+      />
+
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span>Avaliações</span><ChevronRight className="h-3 w-3" /><span className="text-foreground font-medium">Nova</span>
       </div>
