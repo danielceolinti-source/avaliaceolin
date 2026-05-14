@@ -55,18 +55,21 @@ const ROLES: { id: AppRole; label: string; tone: string; icon: any }[] = [
   { id: "ti", label: "T.I.", tone: "bg-info/15 text-info border-info/30", icon: ShieldCheck },
   { id: "gestor", label: "Gestor", tone: "bg-warning/15 text-warning border-warning/30", icon: Shield },
   { id: "avaliador", label: "Avaliador", tone: "bg-muted text-foreground border-border", icon: UserIcon },
+  { id: "vendedor", label: "Vendedor", tone: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30", icon: UserIcon },
 ];
 
 const EMPRESAS = ["Ceolin", "Viva"];
 const MASTER_EMAIL = "daniel@avaliaceolin.sistema";
 
-type Row = { 
-  user_id: string; 
-  full_name: string | null; 
-  phone: string | null; 
-  email?: string; // We'll fetch email if possible or use a flag
-  created_at: string; 
-  roles: AppRole[]; 
+type Row = {
+  user_id: string;
+  full_name: string | null;
+  phone: string | null;
+  email?: string;
+  created_at: string;
+  roles: AppRole[];
+  vendedor_id: string | null;
+  vendedor_nome?: string | null;
   empresa: string | null;
   ativo: boolean;
   isMaster?: boolean;
@@ -94,36 +97,52 @@ export default function Usuarios() {
     password: "",
     role: "avaliador" as AppRole,
     empresa: "Ceolin" as any,
+    vendedor_id: "" as string,
   });
+
+  const [vendedoresList, setVendedoresList] = useState<{ id: string; nome: string; empresa: string | null }[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("vendedores").select("id,nome,empresa").eq("ativo", true).order("nome");
+      setVendedoresList((data as any) || []);
+    })();
+  }, []);
 
   const load = async () => {
     setLoading(true);
     try {
       const [{ data: profiles }, { data: userRoles }] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-        supabase.from("user_roles").select("user_id, role"),
+        (supabase.from("user_roles") as any).select("user_id, role, vendedor_id"),
       ]);
-      
-      const map = new Map<string, AppRole[]>();
+
+      const rolesMap = new Map<string, AppRole[]>();
+      const vendIdMap = new Map<string, string | null>();
       (userRoles || []).forEach((r: any) => {
-        const arr = map.get(r.user_id) || [];
+        const arr = rolesMap.get(r.user_id) || [];
         arr.push(r.role);
-        map.set(r.user_id, arr);
+        rolesMap.set(r.user_id, arr);
+        if (r.role === "vendedor" && r.vendedor_id) vendIdMap.set(r.user_id, r.vendedor_id);
       });
-      
+
+      // Resolve vendor names
+      const vendIds = Array.from(new Set([...vendIdMap.values()].filter(Boolean))) as string[];
+      const nameMap = new Map<string, string>();
+      if (vendIds.length) {
+        const { data: vs } = await supabase.from("vendedores").select("id,nome").in("id", vendIds);
+        (vs || []).forEach((v: any) => nameMap.set(v.id, v.nome));
+      }
+
       setRows((profiles || []).map((p: any) => {
-        // Daniel is the Master. We'll identify the master by name 
-        // but we'll allow management if there are duplicates, 
-        // protecting only the primary role logic or specific IDs if known.
-        // For now, we'll mark it as Master but allow actions if the user is a SuperAdmin,
-        // except for the very first one or if it matches a specific criteria.
         const isMaster = p.full_name === "Daniel Andrade";
-        
-        return { 
-          ...p, 
+        const vId = vendIdMap.get(p.user_id) || null;
+        return {
+          ...p,
           ativo: p.ativo ?? true,
-          roles: map.get(p.user_id) || [],
-          isMaster
+          roles: rolesMap.get(p.user_id) || [],
+          vendedor_id: vId,
+          vendedor_nome: vId ? nameMap.get(vId) || null : null,
+          isMaster,
         };
       }));
     } catch (error: any) {
@@ -150,13 +169,18 @@ export default function Usuarios() {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    
+
     try {
+      if (form.role === "vendedor" && !form.vendedor_id) {
+        toast.error("Selecione o vendedor a vincular");
+        setBusy(false);
+        return;
+      }
+
       const email = `${form.username}@avaliaceolin.sistema`;
-      
-      // Chamada para Edge Function que usa service role
-      const { data, error } = await supabase.functions.invoke("admin-user-management", {
-        body: { 
+
+      const { error } = await supabase.functions.invoke("admin-user-management", {
+        body: {
           action: "create",
           userData: {
             email,
@@ -164,7 +188,8 @@ export default function Usuarios() {
             full_name: form.fullName,
             phone: form.phone,
             role: form.role,
-            empresa: form.empresa
+            empresa: form.empresa,
+            vendedor_id: form.role === "vendedor" ? form.vendedor_id : null,
           }
         }
       });
@@ -173,7 +198,7 @@ export default function Usuarios() {
 
       toast.success("Usuário criado com sucesso");
       setIsAddOpen(false);
-      setForm({ username: "", fullName: "", phone: "", password: "", role: "avaliador", empresa: "Ceolin" });
+      setForm({ username: "", fullName: "", phone: "", password: "", role: "avaliador", empresa: "Ceolin", vendedor_id: "" });
       load();
     } catch (error: any) {
       toast.error("Erro ao criar usuário. Verifique se a Edge Function está ativa.");
@@ -189,21 +214,33 @@ export default function Usuarios() {
     setBusy(true);
 
     try {
+      if (form.role === "vendedor" && !form.vendedor_id) {
+        toast.error("Selecione o vendedor a vincular");
+        setBusy(false);
+        return;
+      }
+
       const { error: pError } = await supabase
         .from("profiles")
-        .update({ 
-          full_name: form.fullName, 
-          phone: form.phone, 
-          empresa: form.empresa 
+        .update({
+          full_name: form.fullName,
+          phone: form.phone,
+          empresa: form.empresa
         })
         .eq("user_id", editingUser.user_id);
 
       if (pError) throw pError;
 
-      // Update role if changed
-      if (!editingUser.roles.includes(form.role)) {
+      // Sincroniza role + vínculo
+      const roleChanged = !editingUser.roles.includes(form.role);
+      const vendChanged = (editingUser.vendedor_id || null) !== (form.role === "vendedor" ? form.vendedor_id : null);
+      if (roleChanged || vendChanged) {
         await supabase.from("user_roles").delete().eq("user_id", editingUser.user_id);
-        await supabase.from("user_roles").insert({ user_id: editingUser.user_id, role: form.role });
+        await (supabase.from("user_roles") as any).insert({
+          user_id: editingUser.user_id,
+          role: form.role,
+          vendedor_id: form.role === "vendedor" ? form.vendedor_id : null,
+        });
       }
 
       await createLog("UPDATE_USER", editingUser.user_id, editingUser, form);
@@ -327,6 +364,20 @@ export default function Usuarios() {
                   </Select>
                 </div>
               </div>
+              {form.role === "vendedor" && (
+                <div className="grid gap-2">
+                  <Label>Vincular ao Vendedor *</Label>
+                  <Select value={form.vendedor_id} onValueChange={(v) => setForm({ ...form, vendedor_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="Selecione um vendedor" /></SelectTrigger>
+                    <SelectContent>
+                      {vendedoresList.map(v => (
+                        <SelectItem key={v.id} value={v.id}>{v.nome}{v.empresa ? ` · ${v.empresa}` : ""}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">O usuário verá apenas avaliações deste vendedor.</p>
+                </div>
+              )}
               <DialogFooter className="pt-4">
                 <Button type="submit" disabled={busy} className="w-full">
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Criar Conta Corporativa"}
@@ -426,12 +477,13 @@ export default function Usuarios() {
                           <DropdownMenuItem onClick={() => {
                             setEditingUser(u);
                             setForm({
-                              username: "", // Cannot edit username
+                              username: "",
                               fullName: u.full_name || "",
                               phone: u.phone || "",
                               password: "",
                               role: u.roles[0] || "avaliador",
-                              empresa: u.empresa as any || "Ceolin"
+                              empresa: u.empresa as any || "Ceolin",
+                              vendedor_id: (u as any).vendedor_id || "",
                             });
                             setIsEditOpen(true);
                           }}>
@@ -502,6 +554,19 @@ export default function Usuarios() {
                 </Select>
               </div>
             </div>
+            {form.role === "vendedor" && (
+              <div className="grid gap-2">
+                <Label>Vincular ao Vendedor *</Label>
+                <Select value={form.vendedor_id} onValueChange={(v) => setForm({ ...form, vendedor_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione um vendedor" /></SelectTrigger>
+                  <SelectContent>
+                    {vendedoresList.map(v => (
+                      <SelectItem key={v.id} value={v.id}>{v.nome}{v.empresa ? ` · ${v.empresa}` : ""}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <DialogFooter className="pt-4">
               <Button type="submit" disabled={busy} className="w-full">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar Alterações"}

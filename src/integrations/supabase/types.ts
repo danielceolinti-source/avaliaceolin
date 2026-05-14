@@ -261,20 +261,31 @@ export type Database = {
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
+          vendedor_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
+          vendedor_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+          vendedor_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "vendedores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendedores: {
         Row: {
@@ -314,6 +325,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_vendor_name: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -324,7 +336,7 @@ export type Database = {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "super_admin" | "ti" | "gestor" | "avaliador"
+      app_role: "super_admin" | "ti" | "gestor" | "avaliador" | "vendedor"
       empresa: "Ceolin" | "Viva"
       origem: "WhatsApp" | "Presencial"
       status_avaliacao:
@@ -461,7 +473,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "ti", "gestor", "avaliador"],
+      app_role: ["super_admin", "ti", "gestor", "avaliador", "vendedor"],
       empresa: ["Ceolin", "Viva"],
       origem: ["WhatsApp", "Presencial"],
       status_avaliacao: [
