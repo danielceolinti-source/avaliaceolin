@@ -51,7 +51,14 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     if (action === "create") {
-      const { email, password, full_name, phone, role, empresa } = body.userData;
+      const { email, password, full_name, phone, role, empresa, vendedor_id } = body.userData;
+
+      if (role === "vendedor" && !vendedor_id) {
+        return new Response(JSON.stringify({ error: "vendedor_id obrigatório para função vendedor" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const { data: created, error: cErr } = await admin.auth.admin.createUser({
         email,
         password,
@@ -61,11 +68,13 @@ Deno.serve(async (req) => {
       if (cErr) throw cErr;
 
       const uid = created.user!.id;
-      // Trigger handle_new_user já cria o profile e role; vamos garantir os campos
       await admin.from("profiles").update({ full_name, phone, empresa }).eq("user_id", uid);
-      // Substituir role pela escolhida
       await admin.from("user_roles").delete().eq("user_id", uid);
-      await admin.from("user_roles").insert({ user_id: uid, role });
+      await admin.from("user_roles").insert({
+        user_id: uid,
+        role,
+        vendedor_id: role === "vendedor" ? vendedor_id : null,
+      });
 
       return new Response(JSON.stringify({ ok: true, user: created.user }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
