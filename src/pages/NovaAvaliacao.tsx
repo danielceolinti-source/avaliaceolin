@@ -306,13 +306,13 @@ export default function NovaAvaliacao() {
       />
 
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span>Avaliações</span><ChevronRight className="h-3 w-3" /><span className="text-foreground font-medium">Nova</span>
+        <span>Avaliações</span><ChevronRight className="h-3 w-3" /><span className="text-foreground font-medium">{isEditMode ? "Editar" : "Nova"}</span>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold">Nova Avaliação</h1>
-          <p className="text-muted-foreground text-sm mt-1">Insira os dados técnicos e fotos do veículo.</p>
+          <h1 className="font-display text-3xl font-bold">{isEditMode ? "Editar Avaliação" : "Nova Avaliação"}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{isEditMode ? "Continue de onde parou — todos os campos, fotos e avarias permanecem editáveis." : "Insira os dados técnicos e fotos do veículo."}</p>
         </div>
         <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex gap-2">
           <Button variant="outline" onClick={() => salvar("Em Avaliação")} disabled={saving} className="w-full sm:w-auto">
