@@ -183,7 +183,7 @@ export default function Usuarios() {
 
       toast.success("Usuário criado com sucesso");
       setIsAddOpen(false);
-      setForm({ username: "", fullName: "", phone: "", password: "", role: "avaliador", empresa: "Ceolin" });
+      setForm({ username: "", fullName: "", phone: "", password: "", role: "avaliador", empresa: "Ceolin", vendedor_id: "" });
       load();
     } catch (error: any) {
       toast.error("Erro ao criar usuário. Verifique se a Edge Function está ativa.");
