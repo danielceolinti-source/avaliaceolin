@@ -26,6 +26,7 @@ import { hojeBR, moedaBR as moeda } from "@/lib/format";
 import FipePicker from "@/components/FipePicker";
 import PlateCamera from "@/components/PlateCamera";
 import InlineCamera from "@/components/InlineCamera";
+import PhotoLightbox from "@/components/PhotoLightbox";
 
 function Chip({ active, onClick, children, tone = "default", onRemove }: any) {
   const tones: Record<string, string> = {
@@ -88,6 +89,7 @@ export default function NovaAvaliacao() {
   const [fipeOpen, setFipeOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [fotoCameraOpen, setFotoCameraOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [novoHist, setNovoHist] = useState("");
   const [novoOp, setNovoOp] = useState("");
 
@@ -526,14 +528,26 @@ export default function NovaAvaliacao() {
           </div>
 
           {fotos.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {fotos.map((f) => (
-                <div key={f.id} className="relative group aspect-square rounded-lg overflow-hidden border bg-muted">
-                  <img src={f.url} alt="Foto do veículo" className="w-full h-full object-cover" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-w-full">
+              {fotos.map((f, i) => (
+                <div key={f.id} className="relative group aspect-square rounded-lg overflow-hidden border bg-muted min-w-0">
                   <button
                     type="button"
-                    onClick={() => removerFoto(f)}
-                    className="absolute top-1.5 right-1.5 h-8 w-8 rounded-full bg-black/60 hover:bg-destructive text-white grid place-items-center opacity-0 group-hover:opacity-100 sm:opacity-100 transition"
+                    onClick={() => setLightboxIndex(i)}
+                    className="absolute inset-0 w-full h-full"
+                    aria-label="Ampliar foto"
+                  >
+                    <img
+                      src={f.url}
+                      alt="Foto do veículo"
+                      loading="lazy"
+                      className="w-full h-full object-cover block"
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removerFoto(f); }}
+                    className="absolute top-1.5 right-1.5 h-8 w-8 rounded-full bg-black/60 hover:bg-destructive text-white grid place-items-center opacity-0 group-hover:opacity-100 sm:opacity-100 transition z-10"
                     aria-label="Remover foto"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -542,6 +556,18 @@ export default function NovaAvaliacao() {
               ))}
             </div>
           )}
+
+          <PhotoLightbox
+            photos={fotos}
+            index={lightboxIndex}
+            onClose={() => setLightboxIndex(null)}
+            onIndexChange={setLightboxIndex}
+            getDownloadUrl={async (p) => {
+              if (!p.storage_path) return p.url;
+              const { data } = await supabase.storage.from("avaliacao-fotos").createSignedUrl(p.storage_path, 60);
+              return data?.signedUrl || p.url;
+            }}
+          />
 
           {!avaliacaoId && (
             <p className="text-xs text-muted-foreground">
