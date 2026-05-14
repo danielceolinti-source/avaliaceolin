@@ -374,10 +374,14 @@ export default function AvaliacaoDetalhe() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {fotos.map(f => (
+                {fotos.map((f, i) => (
                   <div key={f.id} className="relative aspect-square rounded-lg overflow-hidden border bg-muted group shadow-sm">
-                    <img src={f.url} alt="" className="w-full h-full object-cover" />
-                    <button onClick={() => removerFoto(f)} className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive text-white grid place-items-center opacity-0 group-hover:opacity-100 transition"><Trash2 className="h-3 w-3" /></button>
+                    <button type="button" onClick={() => setLightboxIdx(i)} className="absolute inset-0 w-full h-full">
+                      <img src={f.url} alt="" className="w-full h-full object-cover hover:scale-105 transition" />
+                    </button>
+                    {podeEditar && (
+                      <button onClick={(e) => { e.stopPropagation(); removerFoto(f); }} className="absolute top-1 right-1 h-7 w-7 rounded-full bg-destructive text-white grid place-items-center opacity-0 group-hover:opacity-100 sm:opacity-100 transition z-10"><Trash2 className="h-3 w-3" /></button>
+                    )}
                   </div>
                 ))}
               </div>
