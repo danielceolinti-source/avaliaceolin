@@ -113,29 +113,36 @@ export default function Usuarios() {
     try {
       const [{ data: profiles }, { data: userRoles }] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-        supabase.from("user_roles").select("user_id, role"),
+        (supabase.from("user_roles") as any).select("user_id, role, vendedor_id"),
       ]);
-      
-      const map = new Map<string, AppRole[]>();
+
+      const rolesMap = new Map<string, AppRole[]>();
+      const vendIdMap = new Map<string, string | null>();
       (userRoles || []).forEach((r: any) => {
-        const arr = map.get(r.user_id) || [];
+        const arr = rolesMap.get(r.user_id) || [];
         arr.push(r.role);
-        map.set(r.user_id, arr);
+        rolesMap.set(r.user_id, arr);
+        if (r.role === "vendedor" && r.vendedor_id) vendIdMap.set(r.user_id, r.vendedor_id);
       });
-      
+
+      // Resolve vendor names
+      const vendIds = Array.from(new Set([...vendIdMap.values()].filter(Boolean))) as string[];
+      const nameMap = new Map<string, string>();
+      if (vendIds.length) {
+        const { data: vs } = await supabase.from("vendedores").select("id,nome").in("id", vendIds);
+        (vs || []).forEach((v: any) => nameMap.set(v.id, v.nome));
+      }
+
       setRows((profiles || []).map((p: any) => {
-        // Daniel is the Master. We'll identify the master by name 
-        // but we'll allow management if there are duplicates, 
-        // protecting only the primary role logic or specific IDs if known.
-        // For now, we'll mark it as Master but allow actions if the user is a SuperAdmin,
-        // except for the very first one or if it matches a specific criteria.
         const isMaster = p.full_name === "Daniel Andrade";
-        
-        return { 
-          ...p, 
+        const vId = vendIdMap.get(p.user_id) || null;
+        return {
+          ...p,
           ativo: p.ativo ?? true,
-          roles: map.get(p.user_id) || [],
-          isMaster
+          roles: rolesMap.get(p.user_id) || [],
+          vendedor_id: vId,
+          vendedor_nome: vId ? nameMap.get(vId) || null : null,
+          isMaster,
         };
       }));
     } catch (error: any) {
