@@ -441,6 +441,92 @@ export default function NovaAvaliacao() {
         </CardContent>
       </Card>
 
+      {/* Fotos do veículo (anexadas mesmo em rascunho) */}
+      <Card>
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <ImagePlus className="h-4 w-4" /> Fotos do veículo
+            {fotos.length > 0 && <span className="text-xs text-muted-foreground font-normal">({fotos.length})</span>}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            hidden
+            onChange={onUploadFotos}
+          />
+          <input
+            ref={fotoInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={onUploadFotos}
+          />
+
+          <div className="grid grid-cols-2 sm:flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={uploadingFoto}
+              className="h-12"
+            >
+              {uploadingFoto ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Camera className="h-4 w-4 mr-2" />}
+              Tirar Foto
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fotoInputRef.current?.click()}
+              disabled={uploadingFoto}
+              className="h-12"
+            >
+              <ImagePlus className="h-4 w-4 mr-2" /> Fazer Upload
+            </Button>
+          </div>
+
+          {fotos.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {fotos.map((f) => (
+                <div key={f.id} className="relative group aspect-square rounded-lg overflow-hidden border bg-muted">
+                  <img src={f.url} alt="Foto do veículo" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removerFoto(f)}
+                    className="absolute top-1.5 right-1.5 h-8 w-8 rounded-full bg-black/60 hover:bg-destructive text-white grid place-items-center opacity-0 group-hover:opacity-100 sm:opacity-100 transition"
+                    aria-label="Remover foto"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!avaliacaoId && (
+            <p className="text-xs text-muted-foreground">
+              Ao adicionar a primeira foto, o rascunho será salvo automaticamente — você continua editando normalmente.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Botões inferiores (mesma ação dos do topo) */}
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex sm:justify-end gap-2 pt-2">
+        <Button variant="outline" onClick={() => salvar("Em Avaliação")} disabled={saving} className="h-12 sm:h-10 w-full sm:w-auto">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+          Salvar rascunho
+        </Button>
+        <Button onClick={() => salvar("Avaliado")} disabled={saving} className="h-12 sm:h-10 w-full sm:w-auto bg-gradient-primary text-primary-foreground shadow-glow">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+          Concluir Avaliação
+        </Button>
+      </div>
+
       <Dialog open={fipeOpen} onOpenChange={setFipeOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader><DialogTitle>Buscar FIPE</DialogTitle></DialogHeader>
