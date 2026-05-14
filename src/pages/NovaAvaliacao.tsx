@@ -98,8 +98,37 @@ export default function NovaAvaliacao() {
   const fotoInputRef = useRef<HTMLInputElement>(null);
   // (camera nativa removida — captura agora é via InlineCamera)
 
-  // Hydration de rascunho temporário
+  // Hydration: edição (DB) OU rascunho local (localStorage)
   useEffect(() => {
+    if (isEditMode && editId) {
+      (async () => {
+        const { data: a } = await supabase.from("avaliacoes").select("*").eq("id", editId).maybeSingle();
+        if (!a) { toast.error("Avaliação não encontrada"); navigate("/avaliacoes"); return; }
+        setAvaliacaoId(a.id);
+        setEmpresa((a.empresa as Empresa) || "Ceolin");
+        setData(a.data_avaliacao || hojeBR());
+        setCliente(a.cliente || "");
+        setPlaca(a.placa || "");
+        setChassi(a.chassi || "");
+        setMarca(a.marca || "");
+        setModelo(a.modelo || "");
+        setAno(a.ano || "");
+        setKm(a.km != null ? String(a.km) : "");
+        setFipe(Number(a.fipe) || 0);
+        setCusto(Number(a.custo) || 0);
+        setAval(Number(a.avaliacao) || 0);
+        setVendedor(a.vendedor || "");
+        setOrigem(a.origem || "");
+        setModalidade((a.modalidade as any) || "PRESENCIAL");
+        setEstado(a.estado_geral || "");
+        setNivel(a.nivel_avarias || "");
+        setHistorico(Array.isArray(a.historico) ? (a.historico as string[]) : []);
+        setOpcionais(Array.isArray(a.opcionais) ? (a.opcionais as string[]) : []);
+        setObs(a.observacoes || "");
+        await carregarFotos(a.id);
+      })();
+      return;
+    }
     const saved = localStorage.getItem("avaliacao_draft");
     if (saved) {
       try {
@@ -109,19 +138,20 @@ export default function NovaAvaliacao() {
           if (snap.marca) setMarca(snap.marca);
           if (snap.modelo) setModelo(snap.modelo);
           if (snap.cliente) setCliente(snap.cliente);
-          // ... outros campos podem ser adicionados conforme necessidade
         }
       } catch (e) {}
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, editId]);
 
-  // Persistência automática do rascunho
+  // Persistência automática do rascunho (apenas modo criação)
   useEffect(() => {
+    if (isEditMode) return;
     if (placa || cliente || marca) {
       const draft = { placa, marca, modelo, cliente, timestamp: Date.now() };
       localStorage.setItem("avaliacao_draft", JSON.stringify(draft));
     }
-  }, [placa, marca, modelo, cliente]);
+  }, [placa, marca, modelo, cliente, isEditMode]);
 
   const toggle = (arr: string[], setArr: (v: string[]) => void, v: string) =>
     setArr(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
