@@ -457,14 +457,6 @@ export default function NovaAvaliacao() {
         </CardHeader>
         <CardContent className="space-y-4">
           <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            hidden
-            onChange={onUploadFotos}
-          />
-          <input
             ref={fotoInputRef}
             type="file"
             accept="image/*"
@@ -477,7 +469,7 @@ export default function NovaAvaliacao() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => cameraInputRef.current?.click()}
+              onClick={() => setFotoCameraOpen(true)}
               disabled={uploadingFoto}
               className="h-12"
             >
