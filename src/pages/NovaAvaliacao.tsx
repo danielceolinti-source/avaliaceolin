@@ -211,9 +211,9 @@ export default function NovaAvaliacao() {
         setAvaliacaoId(id);
       }
       if (status === "Avaliado") {
-        localStorage.removeItem("avaliacao_draft");
-        toast.success("Avaliação concluída");
-        navigate("/avaliacoes");
+        if (!isEditMode) localStorage.removeItem("avaliacao_draft");
+        toast.success(isEditMode ? "Avaliação atualizada" : "Avaliação concluída");
+        navigate(isEditMode ? `/avaliacoes/${id}` : "/avaliacoes");
       } else {
         toast.success("Rascunho salvo");
       }
