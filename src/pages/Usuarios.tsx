@@ -95,7 +95,16 @@ export default function Usuarios() {
     password: "",
     role: "avaliador" as AppRole,
     empresa: "Ceolin" as any,
+    vendedor_id: "" as string,
   });
+
+  const [vendedoresList, setVendedoresList] = useState<{ id: string; nome: string; empresa: string | null }[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("vendedores").select("id,nome,empresa").eq("ativo", true).order("nome");
+      setVendedoresList((data as any) || []);
+    })();
+  }, []);
 
   const load = async () => {
     setLoading(true);
