@@ -25,6 +25,7 @@ import { useVendedores } from "@/hooks/useVendedores";
 import { hojeBR, moedaBR as moeda } from "@/lib/format";
 import FipePicker from "@/components/FipePicker";
 import PlateCamera from "@/components/PlateCamera";
+import InlineCamera from "@/components/InlineCamera";
 
 function Chip({ active, onClick, children, tone = "default", onRemove }: any) {
   const tones: Record<string, string> = {
@@ -85,6 +86,7 @@ export default function NovaAvaliacao() {
   const [saving, setSaving] = useState(false);
   const [fipeOpen, setFipeOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [fotoCameraOpen, setFotoCameraOpen] = useState(false);
   const [novoHist, setNovoHist] = useState("");
   const [novoOp, setNovoOp] = useState("");
 
@@ -93,7 +95,7 @@ export default function NovaAvaliacao() {
   const [fotos, setFotos] = useState<{ id: string; url: string; storage_path: string }[]>([]);
   const [uploadingFoto, setUploadingFoto] = useState(false);
   const fotoInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+  // (camera nativa removida — captura agora é via InlineCamera)
 
   // Hydration de rascunho temporário
   useEffect(() => {
@@ -210,21 +212,17 @@ export default function NovaAvaliacao() {
     setFotos(withUrls);
   };
 
-  const onUploadFotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files?.length) return;
+  const uploadFotos = async (files: File[]) => {
+    if (!files.length) return;
     if (uploadingFoto) return;
 
     const id = await ensureAvaliacao();
-    if (!id || !user) {
-      if (e.target) e.target.value = "";
-      return;
-    }
+    if (!id || !user) return;
 
     setUploadingFoto(true);
     try {
-      for (const f of Array.from(files)) {
-        const ext = f.name.split(".").pop() || "jpg";
+      for (const f of files) {
+        const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
         const path = `${user.id}/${id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
         const { error: upErr } = await supabase.storage.from("avaliacao-fotos").upload(path, f, { upsert: false });
         if (upErr) throw upErr;
@@ -238,6 +236,14 @@ export default function NovaAvaliacao() {
       toast.error("Falha no upload", { description: err.message });
     } finally {
       setUploadingFoto(false);
+    }
+  };
+
+  const onUploadFotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    try {
+      await uploadFotos(files);
+    } finally {
       if (e.target) e.target.value = "";
     }
   };
@@ -259,6 +265,13 @@ export default function NovaAvaliacao() {
           setCameraOpen(false);
           setTimeout(() => setFipeOpen(true), 400);
         }} 
+      />
+
+      <InlineCamera
+        open={fotoCameraOpen}
+        onClose={() => setFotoCameraOpen(false)}
+        onCapture={async (files) => { await uploadFotos(files); }}
+        multi
       />
 
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -451,14 +464,6 @@ export default function NovaAvaliacao() {
         </CardHeader>
         <CardContent className="space-y-4">
           <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            hidden
-            onChange={onUploadFotos}
-          />
-          <input
             ref={fotoInputRef}
             type="file"
             accept="image/*"
@@ -471,7 +476,7 @@ export default function NovaAvaliacao() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => cameraInputRef.current?.click()}
+              onClick={() => setFotoCameraOpen(true)}
               disabled={uploadingFoto}
               className="h-12"
             >
