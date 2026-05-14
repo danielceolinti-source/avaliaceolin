@@ -447,6 +447,17 @@ export default function AvaliacaoDetalhe() {
           <FipePicker initialMarca={draft?.marca} initialModelo={draft?.modelo} initialAno={draft?.ano} onResolve={onResolveFipe} />
         </DialogContent>
       </Dialog>
+
+      <PhotoLightbox
+        photos={fotos}
+        index={lightboxIdx}
+        onClose={() => setLightboxIdx(null)}
+        onIndexChange={setLightboxIdx}
+        getDownloadUrl={async (p) => {
+          const { data } = await supabase.storage.from("avaliacao-fotos").createSignedUrl(p.storage_path!, 3600, { download: true });
+          return data?.signedUrl || p.url;
+        }}
+      />
     </div>
   );
 }
