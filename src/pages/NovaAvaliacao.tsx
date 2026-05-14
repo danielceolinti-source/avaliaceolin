@@ -275,7 +275,7 @@ export default function NovaAvaliacao() {
             <Save className="h-4 w-4 mr-2" /> Salvar rascunho
           </Button>
           <Button onClick={() => salvar("Avaliado")} disabled={saving} className="w-full sm:w-auto bg-gradient-primary text-primary-foreground shadow-glow">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />} Concluir
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />} Concluir Avaliação
           </Button>
         </div>
       </div>
