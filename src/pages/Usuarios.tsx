@@ -364,6 +364,20 @@ export default function Usuarios() {
                   </Select>
                 </div>
               </div>
+              {form.role === "vendedor" && (
+                <div className="grid gap-2">
+                  <Label>Vincular ao Vendedor *</Label>
+                  <Select value={form.vendedor_id} onValueChange={(v) => setForm({ ...form, vendedor_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="Selecione um vendedor" /></SelectTrigger>
+                    <SelectContent>
+                      {vendedoresList.map(v => (
+                        <SelectItem key={v.id} value={v.id}>{v.nome}{v.empresa ? ` · ${v.empresa}` : ""}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">O usuário verá apenas avaliações deste vendedor.</p>
+                </div>
+              )}
               <DialogFooter className="pt-4">
                 <Button type="submit" disabled={busy} className="w-full">
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Criar Conta Corporativa"}
