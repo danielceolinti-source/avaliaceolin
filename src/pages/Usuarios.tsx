@@ -61,13 +61,15 @@ const ROLES: { id: AppRole; label: string; tone: string; icon: any }[] = [
 const EMPRESAS = ["Ceolin", "Viva"];
 const MASTER_EMAIL = "daniel@avaliaceolin.sistema";
 
-type Row = { 
-  user_id: string; 
-  full_name: string | null; 
-  phone: string | null; 
-  email?: string; // We'll fetch email if possible or use a flag
-  created_at: string; 
-  roles: AppRole[]; 
+type Row = {
+  user_id: string;
+  full_name: string | null;
+  phone: string | null;
+  email?: string;
+  created_at: string;
+  roles: AppRole[];
+  vendedor_id: string | null;
+  vendedor_nome?: string | null;
   empresa: string | null;
   ativo: boolean;
   isMaster?: boolean;
