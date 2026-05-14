@@ -25,6 +25,7 @@ import { useVendedores } from "@/hooks/useVendedores";
 import { hojeBR, moedaBR as moeda } from "@/lib/format";
 import FipePicker from "@/components/FipePicker";
 import PlateCamera from "@/components/PlateCamera";
+import InlineCamera from "@/components/InlineCamera";
 
 function Chip({ active, onClick, children, tone = "default", onRemove }: any) {
   const tones: Record<string, string> = {
