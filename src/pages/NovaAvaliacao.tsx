@@ -89,6 +89,7 @@ export default function NovaAvaliacao() {
   const [fipeOpen, setFipeOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [fotoCameraOpen, setFotoCameraOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [novoHist, setNovoHist] = useState("");
   const [novoOp, setNovoOp] = useState("");
 
