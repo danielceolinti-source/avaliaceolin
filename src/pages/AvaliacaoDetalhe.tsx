@@ -46,6 +46,7 @@ export default function AvaliacaoDetalhe() {
   const [fipeOpen, setFipeOpen] = useState(false);
   const [perfilAvaliador, setPerfilAvaliador] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const { vendedores } = useVendedores(draft?.empresa);
 
   const podeEditar = !!aval && canEditAssessment(aval.created_by);
