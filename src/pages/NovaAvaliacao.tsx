@@ -212,21 +212,17 @@ export default function NovaAvaliacao() {
     setFotos(withUrls);
   };
 
-  const onUploadFotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files?.length) return;
+  const uploadFotos = async (files: File[]) => {
+    if (!files.length) return;
     if (uploadingFoto) return;
 
     const id = await ensureAvaliacao();
-    if (!id || !user) {
-      if (e.target) e.target.value = "";
-      return;
-    }
+    if (!id || !user) return;
 
     setUploadingFoto(true);
     try {
-      for (const f of Array.from(files)) {
-        const ext = f.name.split(".").pop() || "jpg";
+      for (const f of files) {
+        const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
         const path = `${user.id}/${id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
         const { error: upErr } = await supabase.storage.from("avaliacao-fotos").upload(path, f, { upsert: false });
         if (upErr) throw upErr;
@@ -240,6 +236,14 @@ export default function NovaAvaliacao() {
       toast.error("Falha no upload", { description: err.message });
     } finally {
       setUploadingFoto(false);
+    }
+  };
+
+  const onUploadFotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    try {
+      await uploadFotos(files);
+    } finally {
       if (e.target) e.target.value = "";
     }
   };
