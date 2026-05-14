@@ -29,10 +29,11 @@ export function useRole() {
       setLoading(true);
       setError(null);
       try {
-        const { data } = await withTimeout(
+        const res: any = await withTimeout(
           (supabase.from("user_roles") as any).select("role, vendedor_id").eq("user_id", user.id),
           8000
         );
+        const data = res?.data;
         if (!mounted) return;
         const rows = (data || []) as RoleRow[];
         setRoles(rows.map((r) => r.role));
