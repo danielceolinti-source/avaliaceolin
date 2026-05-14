@@ -530,18 +530,18 @@ export default function NovaAvaliacao() {
           {fotos.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-w-full">
               {fotos.map((f, i) => (
-                <div key={f.id} className="relative group aspect-square rounded-lg overflow-hidden border bg-muted min-w-0">
+                <div key={f.id} className="relative group aspect-square rounded-lg overflow-hidden border bg-muted/40 min-w-0 flex items-center justify-center">
                   <button
                     type="button"
                     onClick={() => setLightboxIndex(i)}
-                    className="absolute inset-0 w-full h-full"
+                    className="absolute inset-0 w-full h-full flex items-center justify-center p-1"
                     aria-label="Ampliar foto"
                   >
                     <img
                       src={f.url}
                       alt="Foto do veículo"
                       loading="lazy"
-                      className="w-full h-full object-cover block"
+                      className="max-w-full max-h-full w-auto h-auto object-contain block"
                     />
                   </button>
                   <button
