@@ -88,6 +88,13 @@ export default function NovaAvaliacao() {
   const [novoHist, setNovoHist] = useState("");
   const [novoOp, setNovoOp] = useState("");
 
+  // Avaliação criada (rascunho persistido) — habilita upload de fotos antes de concluir
+  const [avaliacaoId, setAvaliacaoId] = useState<string | null>(null);
+  const [fotos, setFotos] = useState<{ id: string; url: string; storage_path: string }[]>([]);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const fotoInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
   // Hydration de rascunho temporário
   useEffect(() => {
     const saved = localStorage.getItem("avaliacao_draft");
@@ -131,38 +138,116 @@ export default function NovaAvaliacao() {
     setFipeOpen(false);
   };
 
-  const salvar = async (status: "Em Avaliação" | "Avaliado") => {
-    if (!user) return toast.error("Sessão expirada");
-    if (!placa.trim()) return toast.warning("Placa é obrigatória");
-    
+  const buildPayload = (status: "Em Avaliação" | "Avaliado") => ({
+    empresa,
+    placa: placa.toUpperCase(),
+    chassi: chassi || null,
+    cliente: cliente || null,
+    modalidade,
+    data_avaliacao: data,
+    marca, modelo, ano, km: km ? Number(km) : null,
+    fipe: fipe || null, custo: custo || null, avaliacao: aval || null,
+    vendedor, origem: (origem as any) || null,
+    status,
+    status_negociacao: "Sem definição",
+    estado_geral: estado || null, nivel_avarias: nivel || null,
+    historico, opcionais,
+    observacoes: obs || null,
+    created_by: user!.id,
+    updated_by: user!.id,
+  });
+
+  // Salva (insert OU update). Em rascunho, permanece editável na página.
+  const salvar = async (status: "Em Avaliação" | "Avaliado"): Promise<string | null> => {
+    if (!user) { toast.error("Sessão expirada"); return null; }
+    if (!placa.trim()) { toast.warning("Placa é obrigatória"); return null; }
+    if (saving) return null;
+
     setSaving(true);
-    const { error } = await supabase.from("avaliacoes").insert({
-      empresa, 
-      placa: placa.toUpperCase(), 
-      chassi: chassi || null,
-      cliente: cliente || null, 
-      modalidade, 
-      data_avaliacao: data,
-      marca, modelo, ano, km: km ? Number(km) : null,
-      fipe: fipe || null, custo: custo || null, avaliacao: aval || null,
-      vendedor, origem: (origem as any) || null,
-      status, // Camada 1
-      status_negociacao: "Sem definição", // Camada 2 inicial
-      estado_geral: estado || null, nivel_avarias: nivel || null,
-      historico, opcionais,
-      observacoes: obs || null,
-      created_by: user.id, 
-      updated_by: user.id,
-      created_by_name: user.user_metadata?.full_name || user.email,
-    });
-    
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    
-    localStorage.removeItem("avaliacao_draft");
-    toast.success(status === "Avaliado" ? "Avaliação concluída" : "Rascunho salvo");
-    navigate("/avaliacoes");
+    try {
+      const payload = buildPayload(status);
+      let id = avaliacaoId;
+      if (id) {
+        const { error } = await (supabase.from("avaliacoes") as any).update(payload).eq("id", id);
+        if (error) { toast.error(error.message); return null; }
+      } else {
+        const { data: ins, error } = await (supabase.from("avaliacoes") as any)
+          .insert(payload).select("id").single();
+        if (error) { toast.error(error.message); return null; }
+        id = ins.id;
+        setAvaliacaoId(id);
+      }
+      if (status === "Avaliado") {
+        localStorage.removeItem("avaliacao_draft");
+        toast.success("Avaliação concluída");
+        navigate("/avaliacoes");
+      } else {
+        toast.success("Rascunho salvo");
+      }
+      return id;
+    } finally {
+      setSaving(false);
+    }
   };
+
+  // Garante que existe avaliacaoId antes de subir foto (auto-salva rascunho silenciosamente)
+  const ensureAvaliacao = async (): Promise<string | null> => {
+    if (avaliacaoId) return avaliacaoId;
+    if (!user) { toast.error("Sessão expirada"); return null; }
+    if (!placa.trim()) { toast.warning("Preencha a placa antes de adicionar fotos"); return null; }
+    return salvar("Em Avaliação");
+  };
+
+  const carregarFotos = async (id: string) => {
+    const { data: fs } = await supabase.from("avaliacao_fotos")
+      .select("*").eq("avaliacao_id", id).order("created_at");
+    if (!fs) return;
+    const withUrls = await Promise.all(fs.map(async (f: any) => {
+      const { data: signed } = await supabase.storage.from("avaliacao-fotos")
+        .createSignedUrl(f.storage_path, 3600);
+      return { id: f.id, storage_path: f.storage_path, url: signed?.signedUrl || "" };
+    }));
+    setFotos(withUrls);
+  };
+
+  const onUploadFotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    if (uploadingFoto) return;
+
+    const id = await ensureAvaliacao();
+    if (!id || !user) {
+      if (e.target) e.target.value = "";
+      return;
+    }
+
+    setUploadingFoto(true);
+    try {
+      for (const f of Array.from(files)) {
+        const ext = f.name.split(".").pop() || "jpg";
+        const path = `${user.id}/${id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("avaliacao-fotos").upload(path, f, { upsert: false });
+        if (upErr) throw upErr;
+        const { error: insErr } = await supabase.from("avaliacao_fotos")
+          .insert({ avaliacao_id: id, storage_path: path, created_by: user.id });
+        if (insErr) throw insErr;
+      }
+      toast.success(files.length > 1 ? "Fotos enviadas" : "Foto enviada");
+      await carregarFotos(id);
+    } catch (err: any) {
+      toast.error("Falha no upload", { description: err.message });
+    } finally {
+      setUploadingFoto(false);
+      if (e.target) e.target.value = "";
+    }
+  };
+
+  const removerFoto = async (foto: { id: string; storage_path: string }) => {
+    await supabase.storage.from("avaliacao-fotos").remove([foto.storage_path]);
+    await supabase.from("avaliacao_fotos").delete().eq("id", foto.id);
+    setFotos((arr) => arr.filter((x) => x.id !== foto.id));
+  };
+
 
   return (
     <div className="space-y-5 pb-12">
