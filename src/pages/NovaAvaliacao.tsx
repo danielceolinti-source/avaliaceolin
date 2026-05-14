@@ -95,7 +95,7 @@ export default function NovaAvaliacao() {
   const [fotos, setFotos] = useState<{ id: string; url: string; storage_path: string }[]>([]);
   const [uploadingFoto, setUploadingFoto] = useState(false);
   const fotoInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+  // (camera nativa removida — captura agora é via InlineCamera)
 
   // Hydration de rascunho temporário
   useEffect(() => {
