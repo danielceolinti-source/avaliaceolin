@@ -26,6 +26,7 @@ import {
 import { moedaBR as moeda } from "@/lib/format";
 import { useVendedores } from "@/hooks/useVendedores";
 import FipePicker from "@/components/FipePicker";
+import PhotoLightbox from "@/components/PhotoLightbox";
 import { cn } from "@/lib/utils";
 
 export default function AvaliacaoDetalhe() {
@@ -45,6 +46,7 @@ export default function AvaliacaoDetalhe() {
   const [fipeOpen, setFipeOpen] = useState(false);
   const [perfilAvaliador, setPerfilAvaliador] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const { vendedores } = useVendedores(draft?.empresa);
 
   const podeEditar = !!aval && canEditAssessment(aval.created_by);
@@ -254,7 +256,8 @@ export default function AvaliacaoDetalhe() {
           <Badge className={cn("px-3 py-1", STATUS_COLORS[aval.status])}>{aval.status}</Badge>
           <Badge variant="outline" className={cn("px-3 py-1", STATUS_COLORS[aval.status_negociacao])}>{aval.status_negociacao}</Badge>
           {!editing && <Button size="sm" variant="outline" onClick={gerarPDF}><FileDown className="h-4 w-4 mr-2" /> PDF</Button>}
-          {podeEditar && !editing && <Button size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4 mr-2" /> Editar</Button>}
+          {podeEditar && !editing && <Button size="sm" onClick={() => navigate(`/avaliacoes/${id}/editar`)} className="bg-gradient-primary text-primary-foreground"><Pencil className="h-4 w-4 mr-2" /> Continuar Avaliação</Button>}
+          {podeEditar && !editing && <Button size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4 mr-2" /> Edição rápida</Button>}
           {editing && (
             <>
               <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button>
@@ -371,10 +374,14 @@ export default function AvaliacaoDetalhe() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {fotos.map(f => (
+                {fotos.map((f, i) => (
                   <div key={f.id} className="relative aspect-square rounded-lg overflow-hidden border bg-muted group shadow-sm">
-                    <img src={f.url} alt="" className="w-full h-full object-cover" />
-                    <button onClick={() => removerFoto(f)} className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive text-white grid place-items-center opacity-0 group-hover:opacity-100 transition"><Trash2 className="h-3 w-3" /></button>
+                    <button type="button" onClick={() => setLightboxIdx(i)} className="absolute inset-0 w-full h-full">
+                      <img src={f.url} alt="" className="w-full h-full object-cover hover:scale-105 transition" />
+                    </button>
+                    {podeEditar && (
+                      <button onClick={(e) => { e.stopPropagation(); removerFoto(f); }} className="absolute top-1 right-1 h-7 w-7 rounded-full bg-destructive text-white grid place-items-center opacity-0 group-hover:opacity-100 sm:opacity-100 transition z-10"><Trash2 className="h-3 w-3" /></button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -440,6 +447,17 @@ export default function AvaliacaoDetalhe() {
           <FipePicker initialMarca={draft?.marca} initialModelo={draft?.modelo} initialAno={draft?.ano} onResolve={onResolveFipe} />
         </DialogContent>
       </Dialog>
+
+      <PhotoLightbox
+        photos={fotos}
+        index={lightboxIdx}
+        onClose={() => setLightboxIdx(null)}
+        onIndexChange={setLightboxIdx}
+        getDownloadUrl={async (p) => {
+          const { data } = await supabase.storage.from("avaliacao-fotos").createSignedUrl(p.storage_path!, 3600, { download: true });
+          return data?.signedUrl || p.url;
+        }}
+      />
     </div>
   );
 }
