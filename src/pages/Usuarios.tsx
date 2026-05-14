@@ -436,12 +436,13 @@ export default function Usuarios() {
                           <DropdownMenuItem onClick={() => {
                             setEditingUser(u);
                             setForm({
-                              username: "", // Cannot edit username
+                              username: "",
                               fullName: u.full_name || "",
                               phone: u.phone || "",
                               password: "",
                               role: u.roles[0] || "avaliador",
-                              empresa: u.empresa as any || "Ceolin"
+                              empresa: u.empresa as any || "Ceolin",
+                              vendedor_id: (u as any).vendedor_id || "",
                             });
                             setIsEditOpen(true);
                           }}>
