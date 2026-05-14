@@ -373,11 +373,11 @@ export default function AvaliacaoDetalhe() {
               {podeEditar && <Button size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>{uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4 mr-2" />} Adicionar</Button>}
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-w-full">
                 {fotos.map((f, i) => (
-                  <div key={f.id} className="relative aspect-square rounded-lg overflow-hidden border bg-muted group shadow-sm">
-                    <button type="button" onClick={() => setLightboxIdx(i)} className="absolute inset-0 w-full h-full">
-                      <img src={f.url} alt="" className="w-full h-full object-cover hover:scale-105 transition" />
+                  <div key={f.id} className="relative aspect-square rounded-lg overflow-hidden border bg-muted/40 group shadow-sm min-w-0 flex items-center justify-center">
+                    <button type="button" onClick={() => setLightboxIdx(i)} className="absolute inset-0 w-full h-full flex items-center justify-center p-1">
+                      <img src={f.url} alt="" loading="lazy" className="max-w-full max-h-full w-auto h-auto object-contain block transition" />
                     </button>
                     {podeEditar && (
                       <button onClick={(e) => { e.stopPropagation(); removerFoto(f); }} className="absolute top-1 right-1 h-7 w-7 rounded-full bg-destructive text-white grid place-items-center opacity-0 group-hover:opacity-100 sm:opacity-100 transition z-10"><Trash2 className="h-3 w-3" /></button>
