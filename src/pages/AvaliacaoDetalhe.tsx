@@ -26,6 +26,7 @@ import {
 import { moedaBR as moeda } from "@/lib/format";
 import { useVendedores } from "@/hooks/useVendedores";
 import FipePicker from "@/components/FipePicker";
+import PhotoLightbox from "@/components/PhotoLightbox";
 import { cn } from "@/lib/utils";
 
 export default function AvaliacaoDetalhe() {
