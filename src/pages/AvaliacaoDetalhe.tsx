@@ -256,7 +256,8 @@ export default function AvaliacaoDetalhe() {
           <Badge className={cn("px-3 py-1", STATUS_COLORS[aval.status])}>{aval.status}</Badge>
           <Badge variant="outline" className={cn("px-3 py-1", STATUS_COLORS[aval.status_negociacao])}>{aval.status_negociacao}</Badge>
           {!editing && <Button size="sm" variant="outline" onClick={gerarPDF}><FileDown className="h-4 w-4 mr-2" /> PDF</Button>}
-          {podeEditar && !editing && <Button size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4 mr-2" /> Editar</Button>}
+          {podeEditar && !editing && <Button size="sm" onClick={() => navigate(`/avaliacoes/${id}/editar`)} className="bg-gradient-primary text-primary-foreground"><Pencil className="h-4 w-4 mr-2" /> Continuar Avaliação</Button>}
+          {podeEditar && !editing && <Button size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4 mr-2" /> Edição rápida</Button>}
           {editing && (
             <>
               <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button>
