@@ -26,13 +26,16 @@ import {
   UserCircle,
   Upload,
   ShieldAlert,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Gauge
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/hooks/useRole";
 import { toast } from "sonner";
 import { EMPRESAS, STATUS, ORIGENS, OPCIONAIS, TAGS_OBS } from "@/data/constants";
 import { dataBR } from "@/lib/format";
+import KmBadge from "@/components/KmBadge";
+import { useQueryClient } from "@tanstack/react-query";
 
 type AuditLog = {
   id: string;
@@ -70,10 +73,75 @@ export default function Configuracoes() {
   });
   const [loadingPerfil, setLoadingPerfil] = useState(false);
 
+  // ─────────── Parâmetros KM (system_settings) ───────────
+  const queryClient = useQueryClient();
+  const [kmSettings, setKmSettings] = useState({
+    yellow: "80000",
+    red: "100000",
+    yellowText: "",
+    redText: "",
+  });
+  const [savingKm, setSavingKm] = useState(false);
+  const [loadingKm, setLoadingKm] = useState(false);
+
+  const loadKmSettings = async () => {
+    setLoadingKm(true);
+    const { data } = await (supabase as any).from("system_settings").select("key, value").in("key", [
+      "km_threshold_yellow",
+      "km_threshold_red",
+      "km_alert_yellow_text",
+      "km_alert_red_text",
+    ]);
+    const map = Object.fromEntries((data || []).map((r: any) => [r.key, r.value]));
+    setKmSettings({
+      yellow: map.km_threshold_yellow ?? "80000",
+      red: map.km_threshold_red ?? "100000",
+      yellowText: map.km_alert_yellow_text ?? "",
+      redText: map.km_alert_red_text ?? "",
+    });
+    setLoadingKm(false);
+  };
+
+  const saveKmSettings = async () => {
+    const y = parseInt(kmSettings.yellow);
+    const r = parseInt(kmSettings.red);
+    if (isNaN(y) || isNaN(r) || y <= 0 || r <= 0) {
+      toast.error("Informe valores numéricos válidos para os limites de KM.");
+      return;
+    }
+    if (y >= r) {
+      toast.error("O limite Amarelo deve ser menor que o limite Vermelho.");
+      return;
+    }
+    setSavingKm(true);
+    const updates = [
+      { key: "km_threshold_yellow", value: String(y) },
+      { key: "km_threshold_red", value: String(r) },
+      { key: "km_alert_yellow_text", value: kmSettings.yellowText },
+      { key: "km_alert_red_text", value: kmSettings.redText },
+    ];
+    try {
+      for (const u of updates) {
+        const { error } = await (supabase as any)
+          .from("system_settings")
+          .update({ value: u.value })
+          .eq("key", u.key);
+        if (error) throw error;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["km-thresholds"] });
+      toast.success("Parâmetros de KM atualizados.");
+    } catch (err: any) {
+      toast.error("Falha ao salvar", { description: err.message });
+    } finally {
+      setSavingKm(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === "auditoria") loadLogs();
     if (activeTab === "perfil") loadPerfil();
     if (activeTab === "empresas") loadConfig();
+    if (activeTab === "parametros") loadKmSettings();
   }, [activeTab]);
 
   const loadConfig = async () => {
