@@ -379,7 +379,11 @@ export default function NovaAvaliacao() {
           <div className="lg:col-span-2"><Label>Modelo / Versão</Label><Input value={modelo} onChange={(e) => setModelo(e.target.value)} className="mt-1.5" /></div>
           <div><Label>Ano/Modelo</Label><Input value={ano} onChange={(e) => setAno(e.target.value)} placeholder="24/24" className="mt-1.5 font-mono" /></div>
           <div><Label>Chassi</Label><Input value={chassi} onChange={(e) => setChassi(e.target.value.toUpperCase())} className="mt-1.5 font-mono uppercase" /></div>
-          <div><Label>Quilometragem</Label><Input type="number" value={km} onChange={(e) => setKm(e.target.value)} className="mt-1.5" /></div>
+          <div>
+            <Label>Quilometragem</Label>
+            <Input type="number" value={km} onChange={(e) => setKm(e.target.value)} className="mt-1.5" />
+            {km && <KmAlertBanner km={Number(km)} className="mt-2" />}
+          </div>
           <div>
             <Label>FIPE</Label>
             <Input type="number" value={fipe || ""} onChange={(e) => setFipe(+e.target.value)} className="mt-1.5 font-mono" />
