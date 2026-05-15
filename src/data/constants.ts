@@ -67,7 +67,7 @@ export const LEGACY_STATUS_MAP: Record<string, { status: StatusAvaliacao; negoci
   "Cancelado": { status: "Avaliado", negociacao: "Arquivado" },
 };
 
-export const ESTADO_GERAL = ["Excelente", "Muito Bom", "Bom", "Regular", "Ruim"] as const;
+export const ESTADO_GERAL = ["Excelente", "Bom", "Regular", "Ruim", "Muito Ruim"] as const;
 export const NIVEL_AVARIAS = ["Sem avarias", "Leve", "Moderado", "Alto", "Grave"] as const;
 
 export const HISTORICO_OPCOES = [
