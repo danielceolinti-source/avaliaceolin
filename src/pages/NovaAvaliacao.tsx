@@ -27,6 +27,8 @@ import FipePicker from "@/components/FipePicker";
 import PlateCamera from "@/components/PlateCamera";
 import InlineCamera from "@/components/InlineCamera";
 import PhotoLightbox from "@/components/PhotoLightbox";
+import KmAlertBanner from "@/components/KmAlertBanner";
+import { fixFileOrientation } from "@/utils/fixImageOrientation";
 
 function Chip({ active, onClick, children, tone = "default", onRemove }: any) {
   const tones: Record<string, string> = {
@@ -55,7 +57,7 @@ function Chip({ active, onClick, children, tone = "default", onRemove }: any) {
   );
 }
 
-const ESTADO_TONE: Record<string, string> = { Excelente: "success", "Muito Bom": "success", Bom: "info", Regular: "warn", Ruim: "danger" };
+const ESTADO_TONE: Record<string, string> = { Excelente: "success", Bom: "info", Regular: "warn", Ruim: "danger", "Muito Ruim": "danger", "Muito Bom": "success" };
 const AVARIA_TONE: Record<string, string> = { "Sem avarias": "success", Leve: "info", Moderado: "warn", Alto: "danger", Grave: "danger" };
 
 export default function NovaAvaliacao() {
@@ -254,7 +256,8 @@ export default function NovaAvaliacao() {
 
     setUploadingFoto(true);
     try {
-      for (const f of files) {
+      for (const raw of files) {
+        const f = await fixFileOrientation(raw);
         const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
         const path = `${user.id}/${id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
         const { error: upErr } = await supabase.storage.from("avaliacao-fotos").upload(path, f, { upsert: false });
@@ -376,7 +379,11 @@ export default function NovaAvaliacao() {
           <div className="lg:col-span-2"><Label>Modelo / Versão</Label><Input value={modelo} onChange={(e) => setModelo(e.target.value)} className="mt-1.5" /></div>
           <div><Label>Ano/Modelo</Label><Input value={ano} onChange={(e) => setAno(e.target.value)} placeholder="24/24" className="mt-1.5 font-mono" /></div>
           <div><Label>Chassi</Label><Input value={chassi} onChange={(e) => setChassi(e.target.value.toUpperCase())} className="mt-1.5 font-mono uppercase" /></div>
-          <div><Label>Quilometragem</Label><Input type="number" value={km} onChange={(e) => setKm(e.target.value)} className="mt-1.5" /></div>
+          <div>
+            <Label>Quilometragem</Label>
+            <Input type="number" value={km} onChange={(e) => setKm(e.target.value)} className="mt-1.5" />
+            {km && <KmAlertBanner km={Number(km)} className="mt-2" />}
+          </div>
           <div>
             <Label>FIPE</Label>
             <Input type="number" value={fipe || ""} onChange={(e) => setFipe(+e.target.value)} className="mt-1.5 font-mono" />

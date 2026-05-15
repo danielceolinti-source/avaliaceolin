@@ -26,13 +26,16 @@ import {
   UserCircle,
   Upload,
   ShieldAlert,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Gauge
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/hooks/useRole";
 import { toast } from "sonner";
 import { EMPRESAS, STATUS, ORIGENS, OPCIONAIS, TAGS_OBS } from "@/data/constants";
 import { dataBR } from "@/lib/format";
+import KmBadge from "@/components/KmBadge";
+import { useQueryClient } from "@tanstack/react-query";
 
 type AuditLog = {
   id: string;
@@ -70,10 +73,75 @@ export default function Configuracoes() {
   });
   const [loadingPerfil, setLoadingPerfil] = useState(false);
 
+  // ─────────── Parâmetros KM (system_settings) ───────────
+  const queryClient = useQueryClient();
+  const [kmSettings, setKmSettings] = useState({
+    yellow: "80000",
+    red: "100000",
+    yellowText: "",
+    redText: "",
+  });
+  const [savingKm, setSavingKm] = useState(false);
+  const [loadingKm, setLoadingKm] = useState(false);
+
+  const loadKmSettings = async () => {
+    setLoadingKm(true);
+    const { data } = await (supabase as any).from("system_settings").select("key, value").in("key", [
+      "km_threshold_yellow",
+      "km_threshold_red",
+      "km_alert_yellow_text",
+      "km_alert_red_text",
+    ]);
+    const map = Object.fromEntries((data || []).map((r: any) => [r.key, r.value]));
+    setKmSettings({
+      yellow: map.km_threshold_yellow ?? "80000",
+      red: map.km_threshold_red ?? "100000",
+      yellowText: map.km_alert_yellow_text ?? "",
+      redText: map.km_alert_red_text ?? "",
+    });
+    setLoadingKm(false);
+  };
+
+  const saveKmSettings = async () => {
+    const y = parseInt(kmSettings.yellow);
+    const r = parseInt(kmSettings.red);
+    if (isNaN(y) || isNaN(r) || y <= 0 || r <= 0) {
+      toast.error("Informe valores numéricos válidos para os limites de KM.");
+      return;
+    }
+    if (y >= r) {
+      toast.error("O limite Amarelo deve ser menor que o limite Vermelho.");
+      return;
+    }
+    setSavingKm(true);
+    const updates = [
+      { key: "km_threshold_yellow", value: String(y) },
+      { key: "km_threshold_red", value: String(r) },
+      { key: "km_alert_yellow_text", value: kmSettings.yellowText },
+      { key: "km_alert_red_text", value: kmSettings.redText },
+    ];
+    try {
+      for (const u of updates) {
+        const { error } = await (supabase as any)
+          .from("system_settings")
+          .update({ value: u.value })
+          .eq("key", u.key);
+        if (error) throw error;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["km-thresholds"] });
+      toast.success("Parâmetros de KM atualizados.");
+    } catch (err: any) {
+      toast.error("Falha ao salvar", { description: err.message });
+    } finally {
+      setSavingKm(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === "auditoria") loadLogs();
     if (activeTab === "perfil") loadPerfil();
     if (activeTab === "empresas") loadConfig();
+    if (activeTab === "parametros") loadKmSettings();
   }, [activeTab]);
 
   const loadConfig = async () => {
@@ -221,8 +289,9 @@ export default function Configuracoes() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:w-[600px] mb-8">
+        <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 lg:w-[760px] mb-8">
           <TabsTrigger value="empresas" className="gap-2"><Building2 className="h-4 w-4" /> Empresas</TabsTrigger>
+          <TabsTrigger value="parametros" className="gap-2"><Gauge className="h-4 w-4" /> Parâmetros</TabsTrigger>
           <TabsTrigger value="logica" className="gap-2"><Settings2 className="h-4 w-4" /> Lógica</TabsTrigger>
           <TabsTrigger value="integracoes" className="gap-2"><Zap className="h-4 w-4" /> Integrações</TabsTrigger>
           <TabsTrigger value="perfil" className="gap-2"><UserCircle className="h-4 w-4" /> Meu Perfil</TabsTrigger>
@@ -307,7 +376,85 @@ export default function Configuracoes() {
           </div>
         </TabsContent>
 
-        {/* 5. MEU PERFIL */}
+        {/* PARÂMETROS DE AVALIAÇÃO — KM */}
+        <TabsContent value="parametros" className="space-y-4">
+          <Card className="border-none shadow-md max-w-3xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Gauge className="h-5 w-5 text-primary" /> Faixas de Quilometragem e Alertas</CardTitle>
+              <CardDescription>
+                Define os limites usados nos badges coloridos e nos banners de alerta exibidos em
+                toda a aplicação. Veículos abaixo do limite Verde→Amarelo são considerados normais.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {!canEditKeys && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 text-amber-800 text-xs p-3 flex items-start gap-2">
+                  <Lock className="h-4 w-4 mt-0.5 shrink-0" />
+                  Apenas usuários Super Admin ou TI podem alterar estes parâmetros.
+                </div>
+              )}
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Limite KM Verde → Amarelo</Label>
+                  <Input
+                    type="number"
+                    value={kmSettings.yellow}
+                    onChange={(e) => setKmSettings({ ...kmSettings, yellow: e.target.value })}
+                    disabled={!canEditKeys || loadingKm}
+                    className="font-mono"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Veículos acima deste valor recebem alerta de atenção.</p>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Limite KM Amarelo → Vermelho</Label>
+                  <Input
+                    type="number"
+                    value={kmSettings.red}
+                    onChange={(e) => setKmSettings({ ...kmSettings, red: e.target.value })}
+                    disabled={!canEditKeys || loadingKm}
+                    className="font-mono"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Veículos acima deste valor recebem alerta de alto risco.</p>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Texto do Alerta Amarelo</Label>
+                <Input
+                  value={kmSettings.yellowText}
+                  onChange={(e) => setKmSettings({ ...kmSettings, yellowText: e.target.value })}
+                  disabled={!canEditKeys || loadingKm}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Texto do Alerta Vermelho</Label>
+                <Input
+                  value={kmSettings.redText}
+                  onChange={(e) => setKmSettings({ ...kmSettings, redText: e.target.value })}
+                  disabled={!canEditKeys || loadingKm}
+                />
+              </div>
+
+              {/* Preview */}
+              <div className="rounded-md border bg-muted/40 p-4 space-y-2">
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Pré-visualização</div>
+                <div className="flex flex-wrap gap-3 items-center">
+                  <KmBadge km={Math.max(1, parseInt(kmSettings.yellow) - 10000)} />
+                  <KmBadge km={Math.max(1, Math.floor((parseInt(kmSettings.yellow) + parseInt(kmSettings.red)) / 2))} />
+                  <KmBadge km={parseInt(kmSettings.red) + 20000} />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Button onClick={saveKmSettings} disabled={!canEditKeys || savingKm} className="gap-2">
+                  {savingKm ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Salvar Parâmetros de Quilometragem
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="perfil" className="space-y-4">
           <Card className="max-w-2xl border-none shadow-md">
             <CardHeader>

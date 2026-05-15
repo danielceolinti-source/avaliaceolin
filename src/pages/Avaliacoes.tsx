@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/hooks/useRole";
+import KmBadge from "@/components/KmBadge";
 // v1.0.3 - Fixed date timezone bug
 import { dataBR, hojeBR, moedaBR as moeda, parseDate } from "@/lib/format";
 import { downloadCSV, toCSV } from "@/lib/csv";
@@ -31,7 +32,16 @@ export default function Avaliacoes() {
     (async () => {
       setLoading(true);
       const { data, error } = await supabase.from("avaliacoes").select("*").order("data_avaliacao", { ascending: false }).order("created_at", { ascending: false });
-      if (!error) setRows(data || []);
+      if (!error && data) {
+        // Hidrata nome do avaliador via profiles (não há join automático)
+        const userIds = Array.from(new Set(data.map((r: any) => r.created_by).filter(Boolean)));
+        let nameMap: Record<string, string> = {};
+        if (userIds.length) {
+          const { data: profs } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+          nameMap = Object.fromEntries((profs || []).map((p: any) => [p.user_id, p.full_name]));
+        }
+        setRows(data.map((r: any) => ({ ...r, created_by_name: r.created_by_name || nameMap[r.created_by] || null })));
+      }
       setLoading(false);
     })();
   }, []);
@@ -237,7 +247,10 @@ export default function Avaliacoes() {
                         <td className="px-4 py-3 whitespace-nowrap font-medium">{a.vendedor || "—"}</td>
                         <td className="px-4 py-3">
                           <div className="font-bold group-hover:text-primary transition-colors">{a.marca} {a.modelo}</div>
-                          <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">{a.ano} {a.km ? `• ${a.km.toLocaleString("pt-BR")} km` : ""}</div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">{a.ano}</span>
+                            {a.km ? <KmBadge km={a.km} /> : null}
+                          </div>
                         </td>
                         <td className="px-4 py-3 font-mono font-bold tracking-tighter text-base">{a.placa}</td>
                         <td className="px-4 py-3 text-right font-mono font-bold text-primary">{moeda(a.avaliacao)}</td>

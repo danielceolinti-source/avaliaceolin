@@ -27,6 +27,8 @@ import { moedaBR as moeda } from "@/lib/format";
 import { useVendedores } from "@/hooks/useVendedores";
 import FipePicker from "@/components/FipePicker";
 import PhotoLightbox from "@/components/PhotoLightbox";
+import KmAlertBanner from "@/components/KmAlertBanner";
+import KmBadge from "@/components/KmBadge";
 import { cn } from "@/lib/utils";
 
 export default function AvaliacaoDetalhe() {
@@ -297,6 +299,8 @@ export default function AvaliacaoDetalhe() {
         )}
       </div>
 
+      {aval?.km ? <KmAlertBanner km={Number(aval.km)} /> : null}
+
       {editing ? (
         <Card>
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -343,7 +347,7 @@ export default function AvaliacaoDetalhe() {
               <div className="space-y-2">
                 <Row k="Cliente" v={aval.cliente} />
                 <Row k="Chassi" v={aval.chassi} mono />
-                <Row k="KM" v={aval.km ? Number(aval.km).toLocaleString() : "—"} />
+                <Row k="KM" v={aval.km ? <KmBadge km={Number(aval.km)} /> : "—"} />
                 <Row k="Vendedor" v={aval.vendedor} />
               </div>
               <div className="space-y-2">
