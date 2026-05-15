@@ -255,6 +255,45 @@ export type Database = {
           },
         ]
       }
+      system_settings: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          label: string | null
+          updated_at: string
+          updated_by: string | null
+          value: string
+          value_type: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          label?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+          value_type?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          label?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+          value_type?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
