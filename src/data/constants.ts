@@ -145,3 +145,54 @@ export const MESES = [
   { num: 11, nome: "Novembro", abrev: "NOV" },
   { num: 12, nome: "Dezembro", abrev: "DEZ" },
 ];
+
+// ─────────────── Fase 5 — Avarias ───────────────
+export const PECAS_VEICULO = [
+  "Para-choque dianteiro",
+  "Para-choque traseiro",
+  "Capô",
+  "Porta-malas",
+  "Teto",
+  "Lateral esquerda",
+  "Lateral direita",
+  "Porta dianteira esquerda",
+  "Porta dianteira direita",
+  "Porta traseira esquerda",
+  "Porta traseira direita",
+  "Para-lama dianteiro esquerdo",
+  "Para-lama dianteiro direito",
+  "Para-lama traseiro esquerdo",
+  "Para-lama traseiro direito",
+  "Para-brisa",
+  "Vidro traseiro",
+  "Faróis",
+  "Lanternas",
+  "Rodas",
+  "Pneus",
+  "Espelhos retrovisores",
+  "Interior / Bancos",
+  "Painel",
+  "Motor",
+  "Câmbio",
+  "Suspensão",
+  "Outros",
+];
+
+export const TIPOS_AVARIA = [
+  "Risco",
+  "Amassado",
+  "Trinca",
+  "Quebra",
+  "Desgaste",
+  "Faltante",
+  "Mau funcionamento",
+  "Outro",
+];
+
+export const SEVERIDADES_AVARIA = ["Leve", "Moderada", "Grave"] as const;
+
+export const SEVERIDADE_COLORS: Record<string, string> = {
+  Leve: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  Moderada: "bg-amber-50 text-amber-800 border-amber-200",
+  Grave: "bg-red-50 text-red-700 border-red-200",
+};

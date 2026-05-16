@@ -47,6 +47,88 @@ export type Database = {
         }
         Relationships: []
       }
+      avaliacao_avaria_fotos: {
+        Row: {
+          avaria_id: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          storage_path: string
+        }
+        Insert: {
+          avaria_id: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          storage_path: string
+        }
+        Update: {
+          avaria_id?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliacao_avaria_fotos_avaria_id_fkey"
+            columns: ["avaria_id"]
+            isOneToOne: false
+            referencedRelation: "avaliacao_avarias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      avaliacao_avarias: {
+        Row: {
+          avaliacao_id: string
+          created_at: string
+          created_by: string | null
+          custo_estimado: number | null
+          descricao: string | null
+          id: string
+          peca: string
+          severidade: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          avaliacao_id: string
+          created_at?: string
+          created_by?: string | null
+          custo_estimado?: number | null
+          descricao?: string | null
+          id?: string
+          peca: string
+          severidade?: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          avaliacao_id?: string
+          created_at?: string
+          created_by?: string | null
+          custo_estimado?: number | null
+          descricao?: string | null
+          id?: string
+          peca?: string
+          severidade?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliacao_avarias_avaliacao_id_fkey"
+            columns: ["avaliacao_id"]
+            isOneToOne: false
+            referencedRelation: "avaliacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       avaliacao_fotos: {
         Row: {
           avaliacao_id: string

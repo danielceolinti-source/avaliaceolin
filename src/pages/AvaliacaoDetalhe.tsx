@@ -29,6 +29,7 @@ import FipePicker from "@/components/FipePicker";
 import PhotoLightbox from "@/components/PhotoLightbox";
 import KmAlertBanner from "@/components/KmAlertBanner";
 import KmBadge from "@/components/KmBadge";
+import AvariasManager from "@/components/AvariasManager";
 import { cn } from "@/lib/utils";
 
 export default function AvaliacaoDetalhe() {
@@ -391,6 +392,9 @@ export default function AvaliacaoDetalhe() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Avarias (Fase 5) */}
+          <AvariasManager avaliacaoId={aval.id} readOnly={!podeEditar} />
         </div>
 
         <div className="space-y-4">

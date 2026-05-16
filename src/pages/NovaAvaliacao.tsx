@@ -29,6 +29,7 @@ import InlineCamera from "@/components/InlineCamera";
 import PhotoLightbox from "@/components/PhotoLightbox";
 import KmAlertBanner from "@/components/KmAlertBanner";
 import { fixFileOrientation } from "@/utils/fixImageOrientation";
+import AvariasManager from "@/components/AvariasManager";
 
 function Chip({ active, onClick, children, tone = "default", onRemove }: any) {
   const tones: Record<string, string> = {
@@ -583,6 +584,9 @@ export default function NovaAvaliacao() {
           )}
         </CardContent>
       </Card>
+
+      {/* Avarias do veículo (Fase 5) */}
+      <AvariasManager avaliacaoId={avaliacaoId} />
 
       {/* Botões inferiores (mesma ação dos do topo) */}
       <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex sm:justify-end gap-2 pt-2">
