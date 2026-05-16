@@ -326,23 +326,6 @@ export default function Configuracoes() {
                       }} 
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label>Cor Primária</Label>
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded border" style={{ backgroundColor: emp.cor || (emp.id === 'Ceolin' ? '#CE2B37' : '#808285') }} />
-                      <Input 
-                        placeholder="#Hex Color" 
-                        value={emp.cor || (emp.id === 'Ceolin' ? '#CE2B37' : '#808285')} 
-                        onChange={e => {
-                          const next = [...empresasData];
-                          next[idx].cor = e.target.value;
-                          setEmpresasData(next);
-                        }}
-                        className="font-mono text-xs" 
-                      />
-                      <Button variant="outline" size="icon"><Palette className="h-4 w-4" /></Button>
-                    </div>
-                  </div>
                   <div className="flex items-center justify-between pt-2">
                     <div className="space-y-0.5">
                       <Label>Status da Empresa</Label>
