@@ -41,7 +41,7 @@ import {
   SEVERIDADE_COLORS,
 } from "@/data/constants";
 import { moedaBR } from "@/lib/format";
-import { fixImageOrientation } from "@/utils/fixImageOrientation";
+import { fixFileOrientation } from "@/utils/fixImageOrientation";
 import PhotoLightbox from "@/components/PhotoLightbox";
 import { cn } from "@/lib/utils";
 
@@ -221,7 +221,7 @@ export default function AvariasManager({ avaliacaoId, readOnly = false }: Props)
     const avariaId = uploadingFor;
     try {
       for (const f of Array.from(files)) {
-        const fixed = await fixImageOrientation(f);
+        const fixed = await fixFileOrientation(f);
         const ext = (fixed.name.split(".").pop() || "jpg").toLowerCase();
         const path = `${avaliacaoId}/avarias/${avariaId}/${Date.now()}-${Math.random()
           .toString(36)
