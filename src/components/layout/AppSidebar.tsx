@@ -30,11 +30,7 @@ export function AppSidebar() {
   ].filter(i => i.visible);
 
   const adminItems = [
-    { title: "Usuários", url: "/usuarios", icon: Users, visible: canManageUsers },
-    { title: "Vendedores", url: "/vendedores", icon: UserCog, visible: canManageVendors },
-    { title: "Auditoria", url: "/auditoria", icon: FileSearch, visible: canViewAudit },
-    { title: "Logs", url: "/logs", icon: Shield, visible: canViewAudit },
-    { title: "Configurações", url: "/configuracoes", icon: Settings, visible: isTI || isSuperAdmin },
+    { title: "Configurações", url: "/configuracoes", icon: Settings, visible: isTI || isSuperAdmin || isGestor || canManageUsers || canManageVendors },
   ].filter(i => i.visible);
 
   return (
