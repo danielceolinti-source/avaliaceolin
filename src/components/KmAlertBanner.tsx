@@ -10,7 +10,7 @@ interface Props {
 
 export default function KmAlertBanner({ km, className }: Props) {
   const { yellowThreshold, redThreshold, yellowText, redText } = useKmThresholds();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   if (km === null || km === undefined || isNaN(Number(km))) return null;
   const variant = getKmBadgeVariant(Number(km), yellowThreshold, redThreshold);
