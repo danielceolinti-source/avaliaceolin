@@ -487,12 +487,15 @@ export default function Configuracoes() {
           </Card>
         </TabsContent>
 
-        {/* 2. LÓGICA OPERACIONAL */}
+        {/* 2. LÓGICA OPERACIONAL — referência somente leitura */}
         <TabsContent value="logica" className="space-y-4">
           <Card className="border-none shadow-md">
             <CardHeader>
-              <CardTitle>Configuração de Campos</CardTitle>
-              <CardDescription>Defina os valores padrão para os seletores do sistema.</CardDescription>
+              <CardTitle>Catálogos do Sistema</CardTitle>
+              <CardDescription>
+                Valores utilizados nos seletores das avaliações. Esta lista é mantida em código pela equipe técnica
+                para garantir consistência entre as concessionárias.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid md:grid-cols-2 gap-8">
@@ -500,21 +503,18 @@ export default function Configuracoes() {
                   <Label className="text-xs uppercase tracking-widest text-muted-foreground">Status Disponíveis</Label>
                   <div className="flex flex-wrap gap-2">
                     {STATUS.map(s => <Badge key={s} variant="secondary" className="px-3 py-1">{s}</Badge>)}
-                    <Button variant="ghost" size="sm" className="h-7 border-dashed border px-2 text-[10px]">+ Novo</Button>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <Label className="text-xs uppercase tracking-widest text-muted-foreground">Origens de Lead</Label>
                   <div className="flex flex-wrap gap-2">
                     {ORIGENS.map(o => <Badge key={o} variant="outline" className="px-3 py-1">{o}</Badge>)}
-                    <Button variant="ghost" size="sm" className="h-7 border-dashed border px-2 text-[10px]">+ Novo</Button>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <Label className="text-xs uppercase tracking-widest text-muted-foreground">Opcionais Padrão</Label>
                   <div className="flex flex-wrap gap-2">
-                    {OPCIONAIS.slice(0, 10).map(o => <Badge key={o} variant="secondary" className="bg-slate-100 text-[10px]">{o}</Badge>)}
-                    <span className="text-[10px] text-muted-foreground">... e mais {OPCIONAIS.length - 10}</span>
+                    {OPCIONAIS.map(o => <Badge key={o} variant="secondary" className="text-[10px]">{o}</Badge>)}
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -524,147 +524,26 @@ export default function Configuracoes() {
                   </div>
                 </div>
               </div>
-              <div className="pt-4 border-t">
-                <Button className="gap-2">
-                  <Save className="h-4 w-4" /> Atualizar Lógica do Sistema
-                </Button>
+              <div className="rounded-md border bg-muted/40 p-3 flex items-start gap-2 text-xs text-muted-foreground">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                Para alterar estes catálogos, solicite à equipe de TI — modificações exigem atualização de código
+                para preservar a integridade dos relatórios históricos.
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* 3. INTEGRAÇÕES */}
-        <TabsContent value="integracoes" className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <Card className="border-none shadow-md">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2"><Bot className="h-5 w-5 text-purple-500" /> Gemini Vision AI</CardTitle>
-                  {testStatus.gemini === 'success' ? <CheckCircle2 className="h-5 w-5 text-success" /> : <AlertCircle className="h-5 w-5 text-warning" />}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-xs text-muted-foreground">Responsável pelo OCR de placas e análise de fotos.</p>
-                <div className="grid gap-2">
-                  <Label className="text-[10px] uppercase">API Key</Label>
-                  <div className="flex gap-2">
-                    <Input type="password" value="••••••••••••••••" disabled={!canEditKeys} className="bg-slate-50" />
-                    <Button variant="outline" size="sm" onClick={() => testIntegration('gemini')}><RefreshCcw className="h-4 w-4" /></Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        {(isSuperAdmin || isTI) && (
+          <TabsContent value="usuarios" className="space-y-4">
+            <Usuarios />
+          </TabsContent>
+        )}
 
-            <Card className="border-none shadow-md">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2"><Search className="h-5 w-5 text-blue-500" /> FIPE Online</CardTitle>
-                  <CheckCircle2 className="h-5 w-5 text-success" />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-xs text-muted-foreground">Sincronização de valores e dados técnicos de veículos.</p>
-                <div className="flex items-center justify-between pt-2">
-                  <Badge variant="outline" className="bg-success/10 text-success border-success/20">Conectado</Badge>
-                  <Button variant="link" size="sm" className="text-xs">Ver Documentação <ExternalLink className="h-3 w-3 ml-1" /></Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-md">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2"><Database className="h-5 w-5 text-emerald-500" /> Supabase</CardTitle>
-                  <CheckCircle2 className="h-5 w-5 text-success" />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-xs text-muted-foreground">Banco de dados e autenticação de usuários.</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2 bg-slate-50 rounded border text-center">
-                    <div className="text-[10px] text-muted-foreground uppercase">Tabelas</div>
-                    <div className="text-sm font-bold">12 Ativas</div>
-                  </div>
-                  <div className="p-2 bg-slate-50 rounded border text-center">
-                    <div className="text-[10px] text-muted-foreground uppercase">Auth</div>
-                    <div className="text-sm font-bold">OK</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-md">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-amber-500" /> Auditoria</CardTitle>
-                  <CheckCircle2 className="h-5 w-5 text-success" />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-xs text-muted-foreground">Registro de ações operacionais e administrativas.</p>
-                <div className="flex items-center justify-between pt-2">
-                  <div className="space-y-0.5">
-                    <Label className="text-xs">Logs Ativos</Label>
-                    <p className="text-[10px] text-muted-foreground">Registrando logs para Auditoria</p>
-                  </div>
-                  <Switch defaultChecked disabled={!isSuperAdmin} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* 4. AUDITORIA / LOGS */}
-        <TabsContent value="auditoria" className="space-y-4">
-          <Card className="border-none shadow-md overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">Logs de Auditoria</CardTitle>
-                  <CardDescription>Últimas 50 ações registradas no sistema.</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={loadLogs} disabled={loadingLogs}>
-                  <RefreshCcw className={`h-4 w-4 mr-2 ${loadingLogs ? 'animate-spin' : ''}`} /> Atualizar
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead className="bg-slate-100/50 text-muted-foreground uppercase tracking-wider">
-                    <tr>
-                      <th className="px-4 py-3 text-left">Data/Hora</th>
-                      <th className="px-4 py-3 text-left">Usuário</th>
-                      <th className="px-4 py-3 text-left">Ação</th>
-                      <th className="px-4 py-3 text-left">Recurso</th>
-                      <th className="px-4 py-3 text-left">Detalhes</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {logs.map((log) => (
-                      <tr key={log.id} className="hover:bg-slate-50/50">
-                        <td className="px-4 py-3 whitespace-nowrap text-muted-foreground font-mono">{dataBR(log.created_at)}</td>
-                        <td className="px-4 py-3 font-medium">{log.profiles?.full_name || 'Sistema'}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant="outline" className={`
-                            ${log.action.includes('CREATE') ? 'bg-success/10 text-success border-success/30' : 
-                              log.action.includes('DELETE') ? 'bg-destructive/10 text-destructive border-destructive/30' : 
-                              'bg-info/10 text-info border-info/30'} 
-                            border-none text-[10px]
-                          `}>
-                            {log.action}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{log.table_name}</td>
-                        <td className="px-4 py-3 max-w-[200px] truncate font-mono text-[10px]">ID: {log.record_id}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {(isSuperAdmin || isTI) && (
+          <TabsContent value="vendedores" className="space-y-4">
+            <Vendedores />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
