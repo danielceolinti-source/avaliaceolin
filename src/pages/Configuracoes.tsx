@@ -6,36 +6,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Building2, 
-  Settings2, 
-  Zap, 
-  History, 
-  ShieldCheck, 
-  Database, 
-  Bot, 
-  Save, 
+import {
+  Building2,
+  Settings2,
+  History,
+  Save,
   RefreshCcw,
-  CheckCircle2,
-  XCircle,
   AlertCircle,
-  Search,
-  ExternalLink,
   Lock,
-  Palette,
   UserCircle,
-  Upload,
   ShieldAlert,
-  Image as ImageIcon,
-  Gauge
+  Gauge,
+  Users,
+  UserCog,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/hooks/useRole";
 import { toast } from "sonner";
 import { EMPRESAS, STATUS, ORIGENS, OPCIONAIS, TAGS_OBS } from "@/data/constants";
-import { dataBR } from "@/lib/format";
 import KmBadge from "@/components/KmBadge";
 import { useQueryClient } from "@tanstack/react-query";
+import Usuarios from "./Usuarios";
+import Vendedores from "./Vendedores";
 
 type AuditLog = {
   id: string;
