@@ -584,6 +584,9 @@ export default function NovaAvaliacao() {
         </CardContent>
       </Card>
 
+      {/* Avarias do veículo (Fase 5) */}
+      <AvariasManager avaliacaoId={avaliacaoId} />
+
       {/* Botões inferiores (mesma ação dos do topo) */}
       <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex sm:justify-end gap-2 pt-2">
         <Button variant="outline" onClick={() => salvar("Em Avaliação")} disabled={saving} className="h-12 sm:h-10 w-full sm:w-auto">
