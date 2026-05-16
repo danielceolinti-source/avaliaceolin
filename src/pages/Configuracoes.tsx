@@ -281,13 +281,17 @@ export default function Configuracoes() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 lg:w-[760px] mb-8">
+        <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 lg:w-[920px] mb-8">
           <TabsTrigger value="empresas" className="gap-2"><Building2 className="h-4 w-4" /> Empresas</TabsTrigger>
           <TabsTrigger value="parametros" className="gap-2"><Gauge className="h-4 w-4" /> Parâmetros</TabsTrigger>
           <TabsTrigger value="logica" className="gap-2"><Settings2 className="h-4 w-4" /> Lógica</TabsTrigger>
-          <TabsTrigger value="integracoes" className="gap-2"><Zap className="h-4 w-4" /> Integrações</TabsTrigger>
+          {(isSuperAdmin || isTI) && (
+            <TabsTrigger value="usuarios" className="gap-2"><Users className="h-4 w-4" /> Usuários</TabsTrigger>
+          )}
+          {(isSuperAdmin || isTI) && (
+            <TabsTrigger value="vendedores" className="gap-2"><UserCog className="h-4 w-4" /> Vendedores</TabsTrigger>
+          )}
           <TabsTrigger value="perfil" className="gap-2"><UserCircle className="h-4 w-4" /> Meu Perfil</TabsTrigger>
-          <TabsTrigger value="auditoria" className="gap-2"><History className="h-4 w-4" /> Auditoria</TabsTrigger>
         </TabsList>
 
         {/* 1. EMPRESAS */}
