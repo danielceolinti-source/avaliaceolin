@@ -9,7 +9,7 @@ import Avaliacoes from "./pages/Avaliacoes";
 import NovaAvaliacao from "./pages/NovaAvaliacao";
 import AvaliacaoDetalhe from "./pages/AvaliacaoDetalhe";
 import Relatorios from "./pages/Relatorios";
-import { Auditoria, Logs } from "./pages/Stubs";
+// removed audit stubs
 import Configuracoes from "./pages/Configuracoes";
 import Usuarios from "./pages/Usuarios";
 import Comprados from "./pages/Comprados";
@@ -39,8 +39,6 @@ const App = () => (
               <Route path="/relatorios" element={<Relatorios />} />
               <Route path="/usuarios" element={<Usuarios />} />
               <Route path="/vendedores" element={<Vendedores />} />
-              <Route path="/auditoria" element={<Auditoria />} />
-              <Route path="/logs" element={<Logs />} />
               <Route path="/configuracoes" element={<Configuracoes />} />
             </Route>
           </Route>
