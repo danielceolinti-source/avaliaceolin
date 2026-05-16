@@ -29,6 +29,7 @@ import InlineCamera from "@/components/InlineCamera";
 import PhotoLightbox from "@/components/PhotoLightbox";
 import KmAlertBanner from "@/components/KmAlertBanner";
 import { fixFileOrientation } from "@/utils/fixImageOrientation";
+import AvariasManager from "@/components/AvariasManager";
 
 function Chip({ active, onClick, children, tone = "default", onRemove }: any) {
   const tones: Record<string, string> = {
